@@ -24,6 +24,16 @@ uv run cortex sync --help
 
 `sync` refreshes tldr, cheat, navi, and cheat.sh's original cheatsheet repository by default. It never runs imported commands or navi variable generators. Failed sources retain their last usable cache; publishing replaces the active collection atomically. Every sync rechecks command availability, including offline syncs.
 
+In a terminal, sync shows an animated purple-to-cyan-to-green progress bar, live source statuses, checked-example and written-file counts, and elapsed time. Updated or unchanged sources appear green, stale caches amber, and failed sources red. The bar reaches 100% after the new catalog is published.
+
+```sh
+just sync                      # animated dashboard in a terminal
+just sync --color always       # force colors, including when output is captured
+just sync --color never        # plain stage/status messages
+```
+
+Redirected output uses plain stage/status messages automatically. `NO_COLOR` and `TERM=dumb` suppress colors and animation; `--json` always keeps both output streams free of ANSI codes. Progress remains on stderr, and the final summary or JSON report goes to stdout.
+
 The first run creates `~/.config/cortex/config.toml`. Source overrides extend the bundled [registry](src/cortex/sources.toml):
 
 ```toml

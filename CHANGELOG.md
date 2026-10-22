@@ -2,6 +2,18 @@
 
 All approved updates are versioned with SemVer and annotated GitHub tags. New features increment the minor version; compatible fixes and maintenance increment the patch version. Interfaces remain under development before 1.0.0.
 
+## [0.2.0] - 2026-10-22
+
+### Added
+
+- Animated gradient progress dashboard for sync, with live source statuses, elapsed time, checked-example counts, and written-file counts.
+- Colored success, stale-cache, and failure feedback, plus `--color auto|always|never`.
+
+### Changed
+
+- Report source completion immediately while preserving registry priority in the merged catalog.
+- Keep redirected output, JSON reports, `NO_COLOR`, and dumb terminals free of terminal control codes.
+
 ## [0.1.1] - 2026-10-22
 
 ### Fixed
@@ -26,3 +38,5 @@ All approved updates are versioned with SemVer and annotated GitHub tags. New fe
 [0.1.0]: https://github.com/njhoffman/cortex/releases/tag/v0.1.0
 
 [0.1.1]: https://github.com/njhoffman/cortex/releases/tag/v0.1.1
+
+[0.2.0]: https://github.com/njhoffman/cortex/releases/tag/v0.2.0

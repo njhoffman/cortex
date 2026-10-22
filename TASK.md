@@ -1,6 +1,18 @@
 # Task checklist
 
-Current approved update: complete Phase 1; initial tag `v0.1.0`, release-workflow fix `v0.1.1`.
+Current approved update: add visual sync feedback and release `v0.2.0`.
+
+## Visual sync feedback — complete
+
+- [x] Add structured progress events for source refresh, filtering, and publication.
+- [x] Add an animated gradient bar, live source statuses, elapsed time, and colored summaries.
+- [x] Preserve plain output for pipes, JSON, `NO_COLOR`, and dumb terminals.
+- [x] Verify completed-source ordering, progress accounting, terminal cleanup, and CLI output modes.
+- [x] Preview the dashboard in a PTY and verify an offline real-corpus sync.
+- [x] Update documentation and changelog; bump to `0.2.0`.
+- [x] Run `just check`, build, commit, tag, push, and verify the GitHub release.
+
+Validation: 90 offline tests, including 16 terminal/progress tests; full-corpus PTY sync retained the same 15,141 examples for 1,722 commands, restored the cursor, and kept stdout free of ANSI codes. JSON and noninteractive/color-disabled modes remain plain. Short split panes use a compact layout.
 
 ## Phase 0 — complete
 

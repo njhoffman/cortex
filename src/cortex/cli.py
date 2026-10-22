@@ -9,6 +9,7 @@ import sys
 from cortex import __version__
 from cortex.config import Paths, load
 from cortex.model import CortexError
+from cortex.progress import SyncDisplay, clean, style, summary, use_color
 from cortex.sync import run
 
 
@@ -36,6 +37,12 @@ def parser() -> argparse.ArgumentParser:
     )
     sync.add_argument("--force", action="store_true", help="bypass fetch/reparse shortcuts")
     sync.add_argument("--json", action="store_true", help="write a JSON report to stdout")
+    sync.add_argument(
+        "--color",
+        choices=("auto", "always", "never"),
+        default="auto",
+        help="terminal colors (default: auto; honors NO_COLOR and TERM=dumb)",
+    )
     return root
 
 
@@ -43,36 +50,41 @@ def main(argv: list[str] | None = None) -> int:
     args = parser().parse_args(argv)
     try:
         config = load(Paths.discover(args.config))
-        status, report = run(
-            config,
-            source_ids=args.source,
-            offline=args.offline,
-            force=args.force,
-            progress=lambda message: print(message, file=sys.stderr, flush=True),
-        )
-        for source in report["sources"]:
-            suffix = f" — {source['message']}" if source["message"] else ""
+        with SyncDisplay(
+            [source.id for source in config.sources if source.enabled],
+            color=args.color,
+            json_output=args.json,
+        ) as display:
+            status, report = run(
+                config,
+                source_ids=args.source,
+                offline=args.offline,
+                force=args.force,
+                progress=display.update,
+            )
+            display.finish(status)
+        if "error" in report:
             print(
-                f"{source['id']:<16} {source['status']:<10} {source['parsed']:>6} examples{suffix}",
+                style(f"cortex: {clean(report['error'])}", "error", display.colored),
                 file=sys.stderr,
             )
-        if "error" in report:
-            print(f"cortex: {report['error']}", file=sys.stderr)
         if args.json:
             print(json.dumps(report, indent=2, sort_keys=True))
         elif report["published"]:
-            counts = report["counts"]
-            print(
-                f"Published {counts['retained']} examples for {report['commands']} commands "
-                f"({counts['duplicate']} duplicates, {counts['unavailable']} unavailable, "
-                f"{counts['unsupported']} unsupported, {counts['excluded']} excluded)."
-            )
+            print(summary(report, colored=use_color(sys.stdout, args.color)))
             print(config.paths.data / "current/commands.md")
         return status
     except (CortexError, OSError) as exc:
         if args.json:
             print(json.dumps({"published": False, "error": str(exc)}))
-        print(f"cortex: {exc}", file=sys.stderr)
+        print(
+            style(
+                f"cortex: {clean(str(exc))}",
+                "error",
+                use_color(sys.stderr, args.color, json_output=args.json),
+            ),
+            file=sys.stderr,
+        )
         return 1
     except KeyboardInterrupt:
         print("cortex: interrupted; active snapshot retained", file=sys.stderr)

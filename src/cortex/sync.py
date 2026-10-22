@@ -12,7 +12,7 @@ import tempfile
 import uuid
 from collections import Counter, defaultdict
 from collections.abc import Callable
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import contextmanager
 from dataclasses import asdict
 from pathlib import Path
@@ -22,6 +22,7 @@ from cortex import __version__
 from cortex.adapters import parse
 from cortex.cache import SourceCache, SourceResult, atomic_text, now
 from cortex.config import Config, Source, read_toml
+from cortex.events import SyncEvent
 from cortex.model import SCHEMA_VERSION, CortexError, Diagnostic, Example, json_text
 from cortex.shell import Availability
 
@@ -89,7 +90,11 @@ def personal(config: Config) -> SourceResult:
     return SourceResult(source, "local", "local", parsed.examples, parsed.diagnostics)
 
 
-def assemble(config: Config, results: list[SourceResult]) -> tuple[list[Example], dict, list, dict]:
+def assemble(
+    config: Config,
+    results: list[SourceResult],
+    progress: Callable[[SyncEvent], None] | None = None,
+) -> tuple[list[Example], dict, list, dict]:
     availability = Availability(config.shell)
     excluded_ids, excluded_commands = read_exclusions(config.paths.data / "exclusions.toml")
     unique: dict[str, Example] = {}
@@ -104,10 +109,19 @@ def assemble(config: Config, results: list[SourceResult]) -> tuple[list[Example]
     )
     diagnostics = []
     inventories: dict[str, set[str]] = defaultdict(set)
+    total = sum(len(result.examples) for result in results)
+    if progress:
+        progress(SyncEvent("filter", total=total, message="Checking installed commands"))
     for result in results:
         diagnostics.extend(asdict(item) for item in result.diagnostics)
         counts["extraction_rejected"] += len(result.diagnostics)
         for raw in result.examples:
+            if progress and counts["parsed"] and counts["parsed"] % 128 == 0:
+                progress(
+                    SyncEvent(
+                        "filter", counts["parsed"], total, message="Checking installed commands"
+                    )
+                )
             counts["parsed"] += 1
             example = copy.deepcopy(raw)
             origin = example.origins[0]
@@ -136,6 +150,9 @@ def assemble(config: Config, results: list[SourceResult]) -> tuple[list[Example]
                 counts["duplicate"] += 1
             else:
                 unique[example.id] = example
+    if progress:
+        progress(SyncEvent("filter", total, total, message="Checking installed commands"))
+        progress(SyncEvent("merge", message="Combining examples and applying exclusions"))
     catalog = []
     for example in unique.values():
         if example.id in excluded_ids or example.command in excluded_commands:
@@ -171,7 +188,11 @@ def markdown(command: str, examples: list[Example], level: int = 1) -> str:
 
 
 def publish(
-    config: Config, catalog: list[Example], report: dict, results: list[SourceResult]
+    config: Config,
+    catalog: list[Example],
+    report: dict,
+    results: list[SourceResult],
+    progress: Callable[[SyncEvent], None] | None = None,
 ) -> Path:
     root = config.paths.data / "snapshots"
     root.mkdir(parents=True, exist_ok=True)
@@ -183,12 +204,22 @@ def publish(
         groups: dict[str, list[Example]] = defaultdict(list)
         for example in catalog:
             groups[example.command].append(example)
+        total = len(groups) + 5 + sum(len(result.licenses) for result in results)
+
+        def writing(completed: int) -> None:
+            if progress:
+                progress(
+                    SyncEvent("publish", completed, total, message="Writing the local catalog")
+                )
+
+        writing(0)
         (temporary / "catalog.jsonl").write_text(
             "".join(
                 json.dumps(example.to_dict(), ensure_ascii=False, sort_keys=True) + "\n"
                 for example in catalog
             )
         )
+        writing(1)
         (temporary / "commands.json").write_text(
             json_text(
                 [
@@ -201,11 +232,15 @@ def publish(
                 ]
             )
         )
+        writing(2)
         combined = ["# Cortex command collection\n"]
-        for command, examples in sorted(groups.items()):
+        for index, (command, examples) in enumerate(sorted(groups.items()), 1):
             (commands / f"{quote(command, safe='')}.md").write_text(markdown(command, examples))
             combined.append("\n" + markdown(command, examples, level=2))
+            if index % 32 == 0 or index == len(groups):
+                writing(index + 2)
         (temporary / "commands.md").write_text("".join(combined))
+        writing(len(groups) + 3)
         (temporary / "manifest.json").write_text(
             json_text(
                 {
@@ -220,11 +255,13 @@ def publish(
                 }
             )
         )
+        writing(len(groups) + 4)
         attribution = [
             "# Attribution\n\nExamples were extracted, filtered, and reformatted by Cortex. "
             "Original text and source locations are preserved in catalog.jsonl. "
             "Content retains its upstream license.\n"
         ]
+        written = len(groups) + 4
         for result in results:
             if not result.examples and not result.licenses:
                 continue
@@ -237,8 +274,11 @@ def publish(
                 file = temporary / "licenses" / source.id / name
                 file.parent.mkdir(parents=True, exist_ok=True)
                 file.write_text(content)
+                written += 1
+                writing(written)
         (temporary / "ATTRIBUTION.md").write_text("".join(attribution))
         (temporary / "licenses").mkdir(exist_ok=True)
+        writing(total)
         # Read back the machine-readable artifacts before changing the active pointer.
         rows = [json.loads(line) for line in (temporary / "catalog.jsonl").read_text().splitlines()]
         if len(rows) != len(catalog) or any(not row["required_commands"] for row in rows):
@@ -261,7 +301,7 @@ def run(
     source_ids: list[str] | None = None,
     offline: bool = False,
     force: bool = False,
-    progress: Callable[[str], None] | None = None,
+    progress: Callable[[SyncEvent], None] | None = None,
 ) -> tuple[int, dict]:
     sources = [source for source in config.sources if source.enabled]
     if source_ids:
@@ -272,8 +312,13 @@ def run(
         config.paths.cache.mkdir(parents=True, exist_ok=True)
         if progress:
             progress(
-                f"{'Reading cached' if offline else 'Refreshing'} sources: "
-                + ", ".join(source.id for source in sources)
+                SyncEvent(
+                    "sources",
+                    total=len(sources),
+                    message=(
+                        "Reading cached sources" if offline else "Refreshing cheatsheet sources"
+                    ),
+                )
             )
 
         def refresh(source: Source) -> SourceResult:
@@ -284,7 +329,38 @@ def run(
             )
 
         with ThreadPoolExecutor(max_workers=config.concurrency) as pool:
-            results = list(pool.map(refresh, sources))
+            futures = {}
+            for index, source in enumerate(sources):
+                if progress:
+                    progress(
+                        SyncEvent(
+                            "source",
+                            total=len(sources),
+                            source=source.id,
+                            status="reading"
+                            if offline or (source_ids and source.id not in source_ids)
+                            else "refreshing",
+                        )
+                    )
+                futures[pool.submit(refresh, source)] = index
+            ordered: dict[int, SourceResult] = {}
+            for future in as_completed(futures):
+                result = future.result()
+                ordered[futures[future]] = result
+                if progress:
+                    progress(
+                        SyncEvent(
+                            "source",
+                            len(ordered),
+                            len(sources),
+                            source=result.source.id,
+                            status=result.status,
+                            examples=len(result.examples),
+                            message=result.message,
+                        )
+                    )
+            # Completion order drives feedback; registry priority still drives merges.
+            results = [ordered[index] for index in range(len(sources))]
         requested = [
             result for result in results if not source_ids or result.source.id in source_ids
         ]
@@ -303,15 +379,15 @@ def run(
             report["error"] = "No usable inputs; active snapshot retained."
             atomic_text(config.paths.cache / "last-sync.json", json_text(report))
             return 1, report
-        if progress:
-            progress("Filtering local command dependencies and assembling the collection…")
-        catalog, counts, diagnostics, inventories = assemble(config, inputs)
+        catalog, counts, diagnostics, inventories = assemble(config, inputs, progress)
         report["counts"] = counts
         report["commands"] = len({example.command for example in catalog})
         atomic_text(config.paths.cache / "diagnostics.json", json_text(diagnostics))
         atomic_text(config.paths.cache / "source-inventory.json", json_text(inventories))
         report["published"] = True
-        destination = publish(config, catalog, report, inputs)
+        destination = publish(config, catalog, report, inputs, progress)
         report["snapshot"] = str(destination)
         atomic_text(config.paths.cache / "last-sync.json", json_text(report))
+        if progress:
+            progress(SyncEvent("done", 1, 1, message="Sync complete"))
         return (2 if any(result.failed for result in results) else 0), report
