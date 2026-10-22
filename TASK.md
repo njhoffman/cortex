@@ -1,6 +1,6 @@
 # Task checklist
 
-Current approved update: complete Phase 1 and release `v0.1.0`.
+Current approved update: complete Phase 1; initial tag `v0.1.0`, release-workflow fix `v0.1.1`.
 
 ## Phase 0 — complete
 
@@ -31,9 +31,10 @@ Current approved update: complete Phase 1 and release `v0.1.0`.
 - [x] Add GitHub CI and tag-triggered builds/releases.
 - [x] Connect the global Codex todo viewer through `TODO.md` and `just todo`.
 - [x] Complete lint, tests, build, and installed-wheel smoke check.
-- [x] Commit this approved update as release `v0.1.0`.
-- [x] Create the annotated Git tag `v0.1.0`.
-- [x] Push the commit and tag to GitHub; verify the tag-triggered release build.
+- [x] Commit the Phase 1 implementation and create the annotated Git tag `v0.1.0`.
+- [x] Push the initial commit and tag; verify GitHub CI.
+- [x] Add a manual release-build retry path and publish patch version `v0.1.1`.
+- [x] Verify the GitHub release build and wheel/source/checksum assets.
 
 ## Later phases — not started
 

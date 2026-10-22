@@ -19,4 +19,6 @@ just release
 
 GitHub CI tests supported Python versions. Pushing a `v*` tag starts a separate release workflow that verifies the tag/package/changelog versions, tests, rebuilds the wheel and source distribution, and attaches both with checksums to the GitHub release. GitHub credentials and permission to push workflow files are required.
 
+If GitHub does not schedule a tag build, or a failed build needs a retry, run `gh workflow run release.yml --ref vMAJOR.MINOR.PATCH`. The workflow supports manual dispatch against the exact release tag; do not move or recreate a published tag. Check the run and release assets before considering publication complete.
+
 The CLI and catalog schema are the public interfaces. Package version is defined once in `pyproject.toml` and read from installed package metadata by the CLI; the lockfile, changelog entry, and Git tag must match it. Upstream cheatsheet revisions are recorded independently in each catalog manifest.

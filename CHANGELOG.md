@@ -2,6 +2,12 @@
 
 All approved updates are versioned with SemVer and annotated GitHub tags. New features increment the minor version; compatible fixes and maintenance increment the patch version. Interfaces remain under development before 1.0.0.
 
+## [0.1.1] - 2026-10-22
+
+### Fixed
+
+- Allow manual release builds against an exact version tag when GitHub does not schedule a tag event, and document retrying without moving published tags.
+
 ## [0.1.0] - 2026-10-22
 
 ### Added
@@ -18,3 +24,5 @@ All approved updates are versioned with SemVer and annotated GitHub tags. New fe
 - `TODO.md` compatibility link and `just todo` for the global Codex checklist viewer.
 
 [0.1.0]: https://github.com/njhoffman/cortex/releases/tag/v0.1.0
+
+[0.1.1]: https://github.com/njhoffman/cortex/releases/tag/v0.1.1
