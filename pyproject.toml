@@ -1,0 +1,36 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "cortex-cheatsheets"
+version = "0.1.0"
+description = "Merge Linux command cheatsheets into an offline, machine-specific catalog."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["bashlex>=0.18,<0.19"]
+
+[project.scripts]
+cortex = "cortex.cli:main"
+
+[project.urls]
+Repository = "https://github.com/njhoffman/cortex"
+
+[dependency-groups]
+dev = ["pytest>=8", "ruff>=0.9"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/cortex"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src", "tests", "scripts", "*.md", "justfile", "pyproject.toml", "uv.lock"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]

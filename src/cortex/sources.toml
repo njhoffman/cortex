@@ -1,0 +1,60 @@
+schema_version = 1
+
+[sources.tldr]
+url = "https://github.com/tldr-pages/tldr.git"
+adapter = "tldr"
+include = ["pages/common/*.md", "pages/linux/*.md"]
+license = "CC-BY-4.0"
+license_files = ["LICENSE.md"]
+priority = 10
+
+[sources.cheat]
+url = "https://github.com/cheat/cheatsheets.git"
+adapter = "cheat"
+include = ["*"]
+exclude = [".*", "README*", "LICENSE*", "CONTRIBUTING*"]
+license = "CC0-1.0"
+license_files = [".github/LICENSE.txt"]
+priority = 20
+
+[sources.navi]
+url = "https://github.com/denisidoro/cheats.git"
+adapter = "navi"
+include = ["**/*.cheat"]
+license = "CC0-1.0"
+license_files = ["LICENSE"]
+priority = 30
+
+[sources.cheat-sheets]
+url = "https://github.com/chubin/cheat.sheets.git"
+adapter = "cheat-sheets"
+include = ["sheets/*"]
+exclude = ["sheets/_*"]
+license = "MIT"
+license_files = ["LICENSE"]
+priority = 40
+
+[sources.eg]
+enabled = false
+url = "https://github.com/srsudar/eg.git"
+adapter = "eg"
+include = ["eg/examples/*.md"]
+license = "MIT"
+license_files = ["LICENSE.txt"]
+priority = 50
+
+[sources.devhints]
+enabled = false
+url = "https://github.com/rstacruz/cheatsheets.git"
+adapter = "devhints"
+license = "unresolved"
+priority = 60
+
+[sources.cheatsheets-zip]
+enabled = false
+url = "https://github.com/Fechin/reference.git"
+adapter = "cheatsheets-zip"
+include = ["source/_posts/*.md"]
+license = "GPL-3.0"
+license_files = ["LICENSE"]
+priority = 70

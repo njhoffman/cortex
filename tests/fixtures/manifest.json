@@ -1,0 +1,42 @@
+{
+  "cheat": {
+    "expected_examples": 17,
+    "files": {
+      ".github/LICENSE.txt": "a2010f343487d3f7618affe54f789f5487602331c0a8d03f49e9a7c547cf0499",
+      "tar": "34038b78af6390d38d0a30a17557d9f35eb459963eac5afc60bb6c99a69bb22d"
+    },
+    "first_template": "tar -xvf /path/to/foo.tar",
+    "revision": "36bdb99dcfadde210503d8c2dcf94b34ee950e1d",
+    "url": "https://github.com/cheat/cheatsheets.git"
+  },
+  "cheat-sheets": {
+    "expected_examples": 3,
+    "files": {
+      "LICENSE": "93807d3bec2dceeb4b32f63426283ce6e9fb694940a7324d8622f1af77c80834",
+      "sheets/tar": "48142711517cc11f79a9ab10ded95193254490d3f92e90da6f9113dbaf22f329"
+    },
+    "first_template": "tar -czvpf \"$(printf '/media/%s/%s/%d:%d_%(%F)T.tgz' \"$USER\" 'DEVICE' ${UID:-`id -u`} ${GID:-`id -g`} -1)\" \"$HOME\"",
+    "revision": "0bcedfb1d218d1218bbc0e9cf809ebca0d367e6d",
+    "url": "https://github.com/chubin/cheat.sheets.git"
+  },
+  "navi": {
+    "expected_examples": 11,
+    "files": {
+      "LICENSE": "a2010f343487d3f7618affe54f789f5487602331c0a8d03f49e9a7c547cf0499",
+      "network/curl.cheat": "756d7b8315d8e0587625bb2ca48ed7489344c499c5140da8c602caa435c52a9a"
+    },
+    "first_template": "curl <url>",
+    "revision": "1339965e9615ce00174cc308a41279d9c59aa75f",
+    "url": "https://github.com/denisidoro/cheats.git"
+  },
+  "tldr": {
+    "expected_examples": 8,
+    "files": {
+      "LICENSE.md": "826498c9793c53709035760c33bd6681e48380d34031320447febe675420ef4d",
+      "pages/common/tar.md": "64ea726aa31218f05a9affc735ccf0396dffc13e0f08914122c060508351f561"
+    },
+    "first_template": "tar cf {{path/to/target.tar}} {{path/to/file1 path/to/file2 ...}}",
+    "revision": "d43adcbe63945152eca16944d4a12ad272b052cf",
+    "url": "https://github.com/tldr-pages/tldr.git"
+  }
+}
