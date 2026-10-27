@@ -8,7 +8,8 @@ import os
 import sys
 
 from cortex import __version__
-from cortex.config import Paths, load
+from cortex.config import DISPLAY_MODES, Paths, load
+from cortex.display import highlight, open_pane, resolve_mode, select, to_stdout
 from cortex.lookup import (
     SHORT_ID,
     command_table,
@@ -47,7 +48,12 @@ def parser() -> argparse.ArgumentParser:
     root.add_argument(
         "--config", help="configuration file (default: XDG_CONFIG_HOME/cortex/config.toml)"
     )
-    subcommands = root.add_subparsers(dest="command", required=True)
+    subcommands = root.add_subparsers(
+        dest="command",
+        required=True,
+        # Leave out the internal `_preview` helper used by fzf.
+        metavar="{sync,sources,list,show,search,add,remove,restore}",
+    )
     sync = subcommands.add_parser(
         "sync", parents=[color], help="refresh sources and publish a local command collection"
     )
@@ -91,6 +97,15 @@ def parser() -> argparse.ArgumentParser:
             "--origins", action="store_true", help="show sources, locations, and licenses"
         )
         lookup.add_argument("--json", action="store_true", help="write examples as JSON")
+    for lookup in (listing, showing, searching):
+        lookup.add_argument(
+            "--display",
+            choices=DISPLAY_MODES,
+            help="stdout, fzf (prints the chosen command), or tmux split/popup "
+            "(default: [display] mode)",
+        )
+    previewing = subcommands.add_parser("_preview")
+    previewing.add_argument("id")
 
     adding = subcommands.add_parser(
         "add", parents=[color, rebuild], help="add a personal example to custom/<command>.cheat"
@@ -131,8 +146,23 @@ def lookup(config, args: argparse.Namespace) -> int:
     colored = use_color(sys.stdout, args.color)
     if args.command == "list":
         rows = commands(snapshot.examples, args.category)
-        print(json.dumps(rows, indent=2) if args.json else command_table(rows, colored=colored))
-        return 0
+        if args.json:
+            print(json.dumps(rows, indent=2))
+            return 0
+        # In fzf modes, list offers every example of the listed commands.
+        examples = [
+            example
+            for example in snapshot.examples
+            if not args.category or example.category == args.category
+        ]
+        return present(
+            config,
+            args,
+            examples,
+            command_table(rows, colored=False),
+            command_table(rows, colored=colored),
+            highlight_stdout=False,
+        )
     if args.command == "show":
         examples = show(snapshot.examples, args.name, args.subcommand)
         if not examples:
@@ -147,9 +177,48 @@ def lookup(config, args: argparse.Namespace) -> int:
             return 1
     if args.json:
         print(json.dumps([example.to_dict() for example in examples], indent=2, sort_keys=True))
+        return 0 if examples else 1
+    return present(
+        config,
+        args,
+        examples,
+        render(examples, colored=False, origins=args.origins),
+        render(examples, colored=colored, origins=args.origins),
+    )
+
+
+def present(
+    config,
+    args: argparse.Namespace,
+    examples: list[Example],
+    plain: str,
+    styled: str,
+    *,
+    highlight_stdout: bool = True,
+) -> int:
+    mode = resolve_mode(args.display or config.display.mode)
+    if mode.startswith("fzf"):
+        status, template = select(config, examples, mode)
+        if template:
+            print(template)
+        return status
+    if mode in {"split", "popup"}:
+        return open_pane(config, plain, mode)
+    if highlight_stdout:
+        to_stdout(config, plain, styled)
     else:
-        print(render(examples, colored=colored, origins=args.origins))
-    return 0 if examples else 1
+        print(styled)
+    return 0
+
+
+def preview(config, args: argparse.Namespace) -> int:
+    """fzf preview helper: one example by full ID, highlighted."""
+    matches = [item for item in load_snapshot(config).examples if item.id == args.id]
+    if not matches:
+        return 1
+    example = matches[0]
+    print(highlight(config, f"# {example.description}\n{example.template}\n"), end="")
+    return 0
 
 
 def change(config, args: argparse.Namespace) -> int:
@@ -269,6 +338,8 @@ def main(argv: list[str] | None = None) -> int:
         config = load(Paths.discover(args.config))
         if args.command == "sources":
             status = show_sources(config, args)
+        elif args.command == "_preview":
+            status = preview(config, args)
         elif args.command in {"list", "show", "search"}:
             status = lookup(config, args)
         elif args.command in {"add", "remove", "restore"}:

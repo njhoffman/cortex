@@ -2,7 +2,7 @@
 
 Cortex refreshes command cheatsheets from several collections and merges Linux-compatible examples for commands available on your machine into one offline catalog.
 
-Requires Linux, Python 3.11+, and Git. It syncs the catalog and supports offline lookup and personal edits; fzf/tmux display and a zsh widget are planned.
+Requires Linux, Python 3.11+, and Git. It syncs the catalog and supports offline lookup, fzf/tmux display, and personal edits; a zsh widget is planned.
 
 ```sh
 uv sync
@@ -90,6 +90,32 @@ cortex search extract archive            # every term must match; command names 
 ```
 
 `show` and `search` accept `--json`. Templates are printed without styling so they can be copied. `search` returns up to 50 examples (`--limit N`) and exits `1` when nothing matches.
+
+### Display modes
+
+`list`, `show`, and `search` take `--display MODE`, which overrides `[display] mode`:
+
+| Mode | Behavior |
+| --- | --- |
+| `stdout` | Print the results, piped through `highlighter` (bat) when stdout is a terminal. |
+| `fzf` | Pick an example in fzf with a highlighted preview. The raw command is printed; Esc prints nothing and exits `130`. |
+| `fzf-split`, `fzf-popup` | The same, in a tmux split (`fzf-tmux` when installed) or a tmux popup. |
+| `split` | Open the results in a tmux pane through `pager` (`less -R`), leaving focus on your prompt. Later lookups reuse that pane. |
+| `popup` | Open the results in a tmux popup. |
+
+With fzf modes, `list` offers every example (or every example in `--category`). The first time a split opens, cortex binds `M-{` (tmux root table) to close the cheatsheet pane and prints the matching `tmux.conf` line to keep it. If `M-{` is already bound to something else, cortex leaves it alone. Without tmux, the tmux modes fall back to `fzf` or `stdout`, and fzf modes fall back to `stdout` when fzf is missing.
+
+```toml
+[display]
+mode = "stdout"
+highlighter = ["bat", "--plain", "--language=sh", "--color=always"]  # [] disables it
+pager = ["less", "-R"]
+split_args = ["-h", "-l", "40%"]          # tmux split-window options
+popup_args = ["-w", "80%", "-h", "80%"]   # tmux display-popup options
+fzf_args = []
+```
+
+Configs created before 0.5.0 have a `highlighter` without `--color=always`, so bat output is uncolored in panes and fzf previews; add the flag to get colors there.
 
 ```sh
 cortex add "tar -tvf archive.tar | less" -d "Page through an archive listing"

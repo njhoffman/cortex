@@ -18,6 +18,7 @@ installed on this machine.
   dependency analysis), `sync.py` (filter, dedupe, categorize, atomic publish),
   `progress.py`/`events.py` (terminal dashboard), `status.py` (`cortex sources`),
   `lookup.py` (`list`/`show`/`search`), `manage.py` (`add`/`remove`/`restore`),
+  `display.py` (stdout/fzf/tmux presentation),
   `sources.toml` (bundled registry).
 - Tests use revision-pinned fixtures in `tests/fixtures/` and must stay offline and isolated
   from the user's XDG directories.

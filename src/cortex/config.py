@@ -25,8 +25,13 @@ concurrency = 4
 timeout_seconds = 60
 
 [display]
+# stdout, fzf, fzf-split, fzf-popup, split, or popup; `--display` overrides it.
 mode = "stdout"
-highlighter = ["bat", "--plain", "--language=sh"]
+highlighter = ["bat", "--plain", "--language=sh", "--color=always"]
+# pager = ["less", "-R"]
+# split_args = ["-h", "-l", "40%"]      # tmux split-window options
+# popup_args = ["-w", "80%", "-h", "80%"]  # tmux display-popup options
+# fzf_args = []
 
 # Source overrides extend the bundled registry by ID.
 # [sources.tldr]
@@ -73,6 +78,21 @@ class Source:
         return asdict(self)
 
 
+DISPLAY_MODES = ("stdout", "fzf", "fzf-split", "fzf-popup", "split", "popup")
+
+
+@dataclass
+class Display:
+    mode: str = "stdout"
+    highlighter: list[str] = field(
+        default_factory=lambda: ["bat", "--plain", "--language=sh", "--color=always"]
+    )
+    pager: list[str] = field(default_factory=lambda: ["less", "-R"])
+    split_args: list[str] = field(default_factory=lambda: ["-h", "-l", "40%"])
+    popup_args: list[str] = field(default_factory=lambda: ["-w", "80%", "-h", "80%"])
+    fzf_args: list[str] = field(default_factory=list)
+
+
 @dataclass
 class Config:
     paths: Paths
@@ -82,6 +102,7 @@ class Config:
     concurrency: int = 4
     timeout: int = 60
     categories: dict[str, str] = field(default_factory=dict)
+    display: Display = field(default_factory=Display)
 
 
 def read_toml(path: Path) -> dict[str, Any]:
@@ -151,6 +172,15 @@ def load(paths: Paths) -> Config:
             isinstance(k, str) and isinstance(v, str) for k, v in categories.items()
         ):
             raise CortexError("categories must map command names to category strings.")
+        display = Display(**raw.get("display", {}))
+        if display.mode not in DISPLAY_MODES:
+            raise CortexError("display.mode must be one of: " + ", ".join(DISPLAY_MODES))
+        for name in ("highlighter", "pager", "split_args", "popup_args", "fzf_args"):
+            value = getattr(display, name)
+            if not isinstance(value, list) or not all(isinstance(x, str) for x in value):
+                raise CortexError(f"display.{name} must be an array of strings.")
+        if not display.pager:
+            raise CortexError("display.pager must name a command.")
         return Config(
             paths,
             sorted(sources, key=lambda s: (s.priority, s.id)),
@@ -159,6 +189,7 @@ def load(paths: Paths) -> Config:
             concurrency,
             timeout,
             categories,
+            display,
         )
     except (TypeError, AttributeError, ValueError) as exc:
         raise CortexError(f"Invalid configuration: {exc}") from exc

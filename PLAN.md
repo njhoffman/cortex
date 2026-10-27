@@ -2,7 +2,7 @@
 
 Turn the requirements in [OUTLINE.md](OUTLINE.md) into a Linux command cheatsheet collection that can be refreshed with `cortex sync` and queried locally afterward. Build the source cache and consolidation pipeline first; add interactive lookup after its output is reliable.
 
-Status: Phases 0 and 1 implemented. Phase 2 has the eg, cheatsheets.zip, and Devhints adapters and `cortex sources`; Devhints has no upstream content license and stays disabled. Phase 3 lookup (`list`, `show`, `search`) and personal management (`add`, `remove`, `restore`) are implemented; eg alias lookup remains. The live checklist and release progress are in [TASK.md](TASK.md).
+Status: Phases 0 and 1 implemented. Phase 2 has the eg, cheatsheets.zip, and Devhints adapters and `cortex sources`; Devhints has no upstream content license and stays disabled. Phase 3 lookup (`list`, `show`, `search`) and personal management (`add`, `remove`, `restore`) are implemented; eg alias lookup remains. Phase 4 display modes and tmux split behavior are implemented; styled width-aware output and the zsh widget remain. The live checklist and release progress are in [TASK.md](TASK.md).
 
 ## 1. Resources to fetch
 

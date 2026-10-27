@@ -1,6 +1,6 @@
 # Task checklist
 
-Current approved update: fix for the `.` builtin's empty command name, released as `v0.4.1`.
+Current approved update: display modes and tmux split behavior, released as `v0.5.0`.
 
 ## Visual sync feedback — complete
 
@@ -87,11 +87,13 @@ Acceptance: lookup works offline; additions and remembered removals survive upst
 
 Acceptance: optional integrations degrade to stdout; a selection replaces prompt text without running it.
 
-- [ ] **Display modes.** (p2) [feature] stdout, fzf, fzf-tmux split/popup, tmux split/popup from `[display] mode` with CLI overrides.
-  `[display]` is already written to the starter config by `config.py` but nothing reads it yet. OUTLINE suggests a command-string mode.
-- [ ] **tmux split behavior.** (p2) [feature] Keep focus on the prompt pane; bind `M-{` to close the cheatsheet pane.
-- [ ] **Styled output.** (p2) [feature] Aligned, colored output with `bat` highlighting; honor width, `NO_COLOR`, non-TTY.
-  Keep raw command text separate from presentation; fall back when `bat` is missing.
+- [x] **Display modes.** (p2) [feature] `--display` / `[display] mode`: stdout, fzf, fzf-split, fzf-popup, split, popup.
+- [x] **tmux split behavior.** (p2) [feature] `split-window -d` keeps focus; one reused pane; runtime `M-{` close binding.
+- [ ] **Styled output.** (p2) [feature] Width-aware alignment and wrapping for stdout and panes.
+  bat highlighting on a terminal is done (0.5.0). Long descriptions still run past the terminal width;
+  `cortex show tar` prints multi-hundred-character lines. Wrap descriptions to the width and keep templates unwrapped.
+- [ ] **Popup modes untested live.** (p3) [test] `popup`/`fzf-popup` are covered only by fake-tmux tests.
+  `display-popup` needs an attached client, so the detached-server check could not exercise it. Try both in a real session.
 - [ ] **zsh widget.** (p2) [feature] Read `$BUFFER`, find the command context, open lookup, insert fzf selection.
   Preserve placeholders and quoting; never execute; cancel leaves the prompt unchanged. Ship as a sourceable script.
 - [ ] **Non-bash cheatsheets.** (p3) [feature] Eventually support content beyond shell commands (OUTLINE end note).

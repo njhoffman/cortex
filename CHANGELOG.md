@@ -2,6 +2,22 @@
 
 All approved updates are versioned with SemVer and annotated GitHub tags. New features increment the minor version; compatible fixes and maintenance increment the patch version. Interfaces remain under development before 1.0.0.
 
+## [0.5.0] - 2026-10-27
+
+### Added
+
+- `--display stdout|fzf|fzf-split|fzf-popup|split|popup` for `list`, `show`, and `search`, with the default taken from `[display] mode`.
+- fzf modes show a highlighted preview and print the chosen command's raw text. Esc exits `130` and prints nothing.
+- `split` opens results in a tmux pane without moving focus from your prompt, and later lookups reuse that pane. On first use cortex binds `M-{` to close the pane, unless that key is already bound.
+- `popup` opens results in a tmux popup.
+- On a terminal, `stdout` mode pipes `show` and `search` output through the `highlighter` command (bat).
+- New `[display]` options: `pager`, `split_args`, `popup_args`, and `fzf_args`. An empty `highlighter` disables highlighting.
+- When tmux or fzf is unavailable, modes fall back to fzf or stdout with a notice.
+
+### Changed
+
+- The starter config's `highlighter` now includes `--color=always`. Add it to an existing config to get colors in tmux panes and fzf previews.
+
 ## [0.4.1] - 2026-10-27
 
 ### Fixed
@@ -92,3 +108,5 @@ All approved updates are versioned with SemVer and annotated GitHub tags. New fe
 [0.4.0]: https://github.com/njhoffman/cortex/releases/tag/v0.4.0
 
 [0.4.1]: https://github.com/njhoffman/cortex/releases/tag/v0.4.1
+
+[0.5.0]: https://github.com/njhoffman/cortex/releases/tag/v0.5.0
