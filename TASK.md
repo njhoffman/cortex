@@ -1,6 +1,6 @@
 # Task checklist
 
-Current approved update: add visual sync feedback and release `v0.2.0`.
+Current approved update: Claude context and Phase 2-4 checklist, released as `v0.2.1`.
 
 ## Visual sync feedback — complete
 
@@ -48,11 +48,49 @@ Validation: 90 offline tests, including 16 terminal/progress tests; full-corpus 
 - [x] Add a manual release-build retry path and publish patch version `v0.1.1`.
 - [x] Verify the GitHub release build and wheel/source/checksum assets.
 
-## Later phases — not started
+## Phase 2 — collection coverage (not started)
 
-- [ ] (p3) [feature] Phase 2: additional collection adapters and source inspection.
-- [ ] (p3) [feature] Phase 3: local lookup and personal management commands.
-- [ ] (p3) [feature] Phase 4: configurable display commands and zsh prompt integration.
+See `PLAN.md` section 7, Phase 2. Acceptance: enabling any implemented source joins the same sync/merge; disabling removes only its contributions.
+
+- [ ] **eg adapter.** (p2) [feature] Parse `srsudar/eg` `eg/examples/*.md` with alias metadata.
+  Registry entry `sources.eg` exists but is disabled; `config.ADAPTERS` lacks `eg`, so enabling it is a config error.
+  Exclude examples for other operating systems; add revision-pinned fixtures under `tests/fixtures/eg/`.
+- [ ] **cheatsheets.zip adapter.** (p2) [feature] Allowlisted `source/_posts/*.md` pages with table/code-block extraction.
+  Must separate complete shell examples from flag tables, regex syntax, and terminal output (e.g. the grep page).
+  Registry entry `sources.cheatsheets-zip` is disabled; GPL-3.0 attribution goes in `ATTRIBUTION.md`.
+- [ ] **Devhints adapter and license.** (p2) [feature] Adapter for `rstacruz/cheatsheets` command pages; resolve content license.
+  `sources.toml` records `license = "unresolved"` with no include list. Keep it non-default until licensing is established.
+- [ ] **Source status command.** (p2) [feature] List sources with revision, freshness, counts, and rejection reasons.
+  Data is already in cache metadata and per-source diagnostics; expose it via a `cortex sources` (or `sync --status`) command with `--json`.
+- [ ] **awesome-cheatsheets adapter.** (p3) [feature] Opt-in adapter for selected `tools/` material and `languages/bash.sh` recipes.
+  Exclude language lessons, editor keystrokes, and macOS sections. Needs a registry entry.
+- [ ] **linux-command collection.** (p3) [feature] Opt-in, Chinese-language `jaywcjlove/linux-command` `command/*.md` source.
+  Separate `language`; preserve per-file author attribution. Needs a registry entry and language filtering in merge.
+- [ ] **Bounded HTTP transport.** (p3) [feature] Configured-URL HTTP fetches with ETag/Last-Modified and rate limits.
+  Only for sources lacking original files; also enables an opt-in, disabled-by-default cht.sh single-command lookup.
+
+## Phase 3 — local lookup and personal management (not started)
+
+Acceptance: lookup works offline; additions and remembered removals survive upstream updates and cache recreation.
+
+- [ ] **list/show/search commands.** (p2) [feature] `cortex list`, `cortex show <command>`, `cortex search <query>` on the active catalog.
+  Resolve `current` once per operation; search names, subcommands, descriptions, templates, categories; exact command matches first.
+- [ ] **add/remove/restore commands.** (p2) [feature] Edit `custom/` and `exclusions.toml`, then rebuild offline.
+  `restore` reverses a remembered exclusion by ID or command; never rewrite existing user files destructively.
+- [ ] **Origin and license inspection.** (p3) [feature] Structured (`--json`) query output plus per-example origin/license display.
+
+## Phase 4 — terminal presentation and zsh integration (not started)
+
+Acceptance: optional integrations degrade to stdout; a selection replaces prompt text without running it.
+
+- [ ] **Display modes.** (p2) [feature] stdout, fzf, fzf-tmux split/popup, tmux split/popup from `[display] mode` with CLI overrides.
+  `[display]` is already written to the starter config by `config.py` but nothing reads it yet. OUTLINE suggests a command-string mode.
+- [ ] **tmux split behavior.** (p2) [feature] Keep focus on the prompt pane; bind `M-{` to close the cheatsheet pane.
+- [ ] **Styled output.** (p2) [feature] Aligned, colored output with `bat` highlighting; honor width, `NO_COLOR`, non-TTY.
+  Keep raw command text separate from presentation; fall back when `bat` is missing.
+- [ ] **zsh widget.** (p2) [feature] Read `$BUFFER`, find the command context, open lookup, insert fzf selection.
+  Preserve placeholders and quoting; never execute; cancel leaves the prompt unchanged. Ship as a sourceable script.
+- [ ] **Non-bash cheatsheets.** (p3) [feature] Eventually support content beyond shell commands (OUTLINE end note).
 
 ## Validation record
 

@@ -2,6 +2,16 @@
 
 All approved updates are versioned with SemVer and annotated GitHub tags. New features increment the minor version; compatible fixes and maintenance increment the patch version. Interfaces remain under development before 1.0.0.
 
+## [0.2.1] - 2026-10-27
+
+### Added
+
+- `CLAUDE.md` project context for Claude Code, importing the shared `AGENTS.md` workflow rules.
+
+### Changed
+
+- Broke the Phase 2-4 roadmap in `TASK.md` into prioritized, categorized checklist items.
+
 ## [0.2.0] - 2026-10-22
 
 ### Added
@@ -40,3 +50,5 @@ All approved updates are versioned with SemVer and annotated GitHub tags. New fe
 [0.1.1]: https://github.com/njhoffman/cortex/releases/tag/v0.1.1
 
 [0.2.0]: https://github.com/njhoffman/cortex/releases/tag/v0.2.0
+
+[0.2.1]: https://github.com/njhoffman/cortex/releases/tag/v0.2.1
