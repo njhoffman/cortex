@@ -1,6 +1,6 @@
 # Task checklist
 
-Current approved update: `list`/`show`/`search` and `add`/`remove`/`restore`, released as `v0.4.0`.
+Current approved update: fix for the `.` builtin's empty command name, released as `v0.4.1`.
 
 ## Visual sync feedback — complete
 
@@ -81,9 +81,7 @@ Acceptance: lookup works offline; additions and remembered removals survive upst
 - [x] **Origin and license inspection.** (p3) [feature] `show`/`search --origins` and `--json`.
 - [ ] **eg aliases in lookup.** (p3) [feature] Save eg's `aliases.json` into the snapshot so `show egrep` finds `grep`.
   The eg adapter ignores it today (e.g. `egrep` -> `grep`, `clang` -> `gcc`). Needs an adapter output and a snapshot file.
-- [ ] **`.` builtin loses its command name.** (p2) [bug] Examples for `. file` publish with `command = ""`.
-  `required_commands` is `['.']` but `command` is empty, so `cortex list` shows a blank row and `show .` finds nothing.
-  The same path lets `ed` cheatsheet lines like `. end active edit` through. See `inspect` in `src/cortex/shell.py`.
+- [x] **`.` builtin loses its command name.** (p2) [bug] `.` now counts as an opaque launcher, like `source`.
 
 ## Phase 4 — terminal presentation and zsh integration (not started)
 

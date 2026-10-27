@@ -48,6 +48,9 @@ def test_structural_dependencies(template, primary, required):
         "builtin not-a-builtin",
         "cat <<EOF\nhello\nEOF",
         "#!/{{path/to/tcc}} -run",
+        ". {{path/to/file}}",
+        ".  end active edit",
+        "sudo . file",
     ],
 )
 def test_unsupported_is_not_guessed(template):

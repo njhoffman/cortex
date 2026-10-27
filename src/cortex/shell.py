@@ -6,7 +6,6 @@ import os
 import re
 import shutil
 from dataclasses import dataclass
-from pathlib import Path
 
 import bashlex
 
@@ -126,7 +125,8 @@ def inspect(template: str, configured_shell: str) -> Inspection:
         external_target = False
         while index < len(words):
             name = _literal(words[index], text)
-            base = Path(name).name
+            # Not Path(name).name: that is empty for the `.` builtin.
+            base = name.rsplit("/", 1)[-1]
             if name.startswith("./") or ("/" in name and not name.startswith("/")):
                 raise Unsupported("recipe requires a relative executable")
             if base in FOREIGN_COMMANDS:

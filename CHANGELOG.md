@@ -2,6 +2,12 @@
 
 All approved updates are versioned with SemVer and annotated GitHub tags. New features increment the minor version; compatible fixes and maintenance increment the patch version. Interfaces remain under development before 1.0.0.
 
+## [0.4.1] - 2026-10-27
+
+### Fixed
+
+- Recipes that run the `.` builtin (such as `. {{path/to/file}}`) were published with an empty command name, which showed up as a blank row in `cortex list`. They are now skipped as opaque launchers, the same as `source`. This also drops a few `ed` cheatsheet lines such as `. end active edit`.
+
 ## [0.4.0] - 2026-10-27
 
 ### Added
@@ -84,3 +90,5 @@ All approved updates are versioned with SemVer and annotated GitHub tags. New fe
 [0.3.0]: https://github.com/njhoffman/cortex/releases/tag/v0.3.0
 
 [0.4.0]: https://github.com/njhoffman/cortex/releases/tag/v0.4.0
+
+[0.4.1]: https://github.com/njhoffman/cortex/releases/tag/v0.4.1
