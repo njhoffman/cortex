@@ -13,7 +13,8 @@ installed on this machine.
   (with alias fallback) are done.
   Remaining work is in `TASK.md`.
 - Commands: `just setup`, `just check` (lint, tests, version agreement), `just build`,
-  `just sync --offline`. Release flow: `RELEASING.md` (`just bump`, then `just release`).
+  `just sync --offline`, `just cortex <args>` (or `just show`/`search`/...), `just install`
+  (editable uv tool). Release flow: `RELEASING.md` (`just bump`, then `just release`).
 - Layout: `src/cortex/` — `cli.py` entry, `config.py` (TOML, XDG paths, adapter allowlist),
   `cache.py` (git fetch/cache), `adapters.py` (per-source parsers), `shell.py` (bashlex
   dependency analysis), `sync.py` (filter, dedupe, categorize, atomic publish),

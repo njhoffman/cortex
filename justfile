@@ -31,9 +31,58 @@ check: lint
 build:
     uv build
 
+# Run any cortex command from this checkout, e.g. `just cortex show tar`.
+[positional-arguments]
+cortex *args:
+    @uv run --locked cortex "$@"
+
 # Refresh the actual user collection; pass --offline to use cached sources.
+[positional-arguments]
 sync *args:
-    uv run --locked cortex sync {{args}}
+    @uv run --locked cortex sync "$@"
+
+# Configured sources and their last sync status; pass an ID for details.
+[positional-arguments]
+sources *args:
+    @uv run --locked cortex sources "$@"
+
+# Commands in the catalog with example counts.
+[positional-arguments]
+list *args:
+    @uv run --locked cortex list "$@"
+
+# A command's examples, e.g. `just show git commit --display split`.
+[positional-arguments]
+show command *args:
+    @uv run --locked cortex show "$@"
+
+# Search descriptions and templates, e.g. `just search extract archive`.
+[positional-arguments]
+search +terms:
+    @uv run --locked cortex search "$@"
+
+# Add a personal example, e.g. `just add 'du -sh *' 'Size of each entry'`.
+[positional-arguments]
+add template description:
+    @uv run --locked cortex add "$1" --description "$2"
+
+# Remember a removal by example ID, or `--command NAME`.
+[positional-arguments]
+remove +args:
+    @uv run --locked cortex remove "$@"
+
+# Undo a remembered removal; without arguments, list removals.
+[positional-arguments]
+restore *args:
+    @uv run --locked cortex restore "$@"
+
+# Put `cortex` on PATH as a uv tool that tracks this checkout's source.
+install:
+    uv tool install --editable --force .
+
+# Remove the `cortex` uv tool.
+uninstall:
+    uv tool uninstall cortex-cheatsheets
 
 # View the project checklist using the installed global Codex todo renderer.
 todo:

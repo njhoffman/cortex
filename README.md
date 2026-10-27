@@ -5,9 +5,13 @@ Cortex refreshes command cheatsheets from several collections and merges Linux-c
 Requires Linux, Python 3.11+, and Git. It syncs the catalog and supports offline lookup, fzf/tmux display, and personal edits; a zsh widget is planned.
 
 ```sh
-uv sync
-uv run cortex sync
+just setup                     # uv sync --locked
+just install                   # puts `cortex` on PATH (uv tool, editable)
+cortex sync
+cortex show tar
 ```
+
+`just install` runs `uv tool install --editable`, so the global `cortex` follows this checkout, including uncommitted edits; `just uninstall` removes it. Without installing, run any command from the checkout with `uv run cortex ...` or `just cortex ...`. The justfile also has shortcuts: `just sync`, `just sources [ID]`, `just list`, `just show CMD [SUB]`, `just search TERMS`, `just add 'CMD' 'DESCRIPTION'`, `just remove ID`, and `just restore [ID]`. Arguments keep their quoting.
 
 The generated collection is at `~/.local/share/cortex/current/commands.md`. Per-command Markdown and a structured `catalog.jsonl` sit alongside it. XDG configuration, cache, and data directory overrides are supported.
 

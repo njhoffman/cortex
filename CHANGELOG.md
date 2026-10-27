@@ -2,6 +2,17 @@
 
 All approved updates are versioned with SemVer and annotated GitHub tags. New features increment the minor version; compatible fixes and maintenance increment the patch version. Interfaces remain under development before 1.0.0.
 
+## [0.6.1] - 2026-10-27
+
+### Added
+
+- `just install` puts `cortex` on PATH as an editable uv tool that follows the checkout. `just uninstall` removes it.
+- New just recipes: `just cortex <args>` runs any command, plus shortcuts `sources`, `list`, `show`, `search`, `add`, `remove`, and `restore`. Arguments keep their quoting, so `just add 'du -sh -- *' 'Size of each entry'` works.
+
+### Changed
+
+- `just sync` passes its arguments through with their quoting intact and no longer echoes the underlying command.
+
 ## [0.6.0] - 2026-10-27
 
 ### Added
@@ -127,3 +138,5 @@ All approved updates are versioned with SemVer and annotated GitHub tags. New fe
 [0.5.0]: https://github.com/njhoffman/cortex/releases/tag/v0.5.0
 
 [0.6.0]: https://github.com/njhoffman/cortex/releases/tag/v0.6.0
+
+[0.6.1]: https://github.com/njhoffman/cortex/releases/tag/v0.6.1
