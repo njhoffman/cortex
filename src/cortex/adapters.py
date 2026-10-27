@@ -15,6 +15,17 @@ FOREIGN_PATH = re.compile(
     r"(?:^|[/_.-])(?:osx|macos|darwin|windows|powershell|bsd)(?:[/_.-]|$)", re.I
 )
 PLACEHOLDER = re.compile(r"\{\{([^{}\n]+)\}\}|(?<![<\w])<([A-Za-z_][\w .:/-]*)>(?!>)")
+SHELL_FENCES = {"sh", "bash", "shell", "shell script", "shell-script", "console", "zsh"}
+FENCE = re.compile(r"^\s*(`{3,}|~{3,})\s*([^`{]*?)\s*(?:\{.*\})?\s*$")
+# Kramdown/Hexo attribute lists such as `{: .-prime}` or `{.cols-4}`.
+ATTRIBUTES = re.compile(r"\s*\{[:.#][^}]*\}")
+HEADING = re.compile(r"^(#{1,6})\s+(.*?)\s*#*$")
+PROMPT = re.compile(r"^\s*\$ ")
+INLINE_COMMENT = re.compile(r"^([^'\"#`]*?\S)\s+#\s+(.+)$")
+COMMAND_COLUMNS = {"command", "commands", "example", "examples", "usage"}
+DESCRIPTION_COLUMNS = {"description", "operation", "meaning", "explanation", "action", "purpose"}
+# Paragraphs such as "or" between two blocks continue the previous description.
+CONNECTIVES = {"or", "and", "also", "alternatively", "ok"}
 
 
 def platform_reason(path: str, text: str, tags: list[str]) -> str | None:
@@ -52,6 +63,9 @@ def make_example(
     # Markdown metadata, output, and flag-only fragments are not commands.
     if template.startswith(("%", "---", "```", "- ")):
         parsed.diagnostics.append(Diagnostic(source.id, path, line, "non-command fragment"))
+        return
+    if template.startswith("-"):
+        parsed.diagnostics.append(Diagnostic(source.id, path, line, "flag-only fragment"))
         return
     origin = Origin(
         source.id, source.url, revision, path, line, source.license, description, template
@@ -164,6 +178,192 @@ def commented(text: str, source: Source, revision: str, path: str, parsed: Parse
     flush()
 
 
+def inline(text: str) -> str:
+    """Reduce Markdown inline markup in a description to readable text."""
+    text = re.sub(r"!?\[([^\]]*)\]\([^)]*\)", r"\1", text)
+    text = re.sub(r"<br\s*/?>", " ", text, flags=re.I)
+    text = re.sub(r"\*\*(.+?)\*\*", r"\1", text)
+    text = re.sub(r"(?<!\w)_(\S(?:.*?\S)?)_(?!\w)", r"\1", text)
+    return " ".join(ATTRIBUTES.sub("", text).split())
+
+
+def cell_text(cell: str) -> str:
+    cell = cell.strip().replace("\\|", "|")
+    code = re.fullmatch(r"(`+)\s*(.*?)\s*\1", cell)
+    # Outside code spans, table cells escape Markdown punctuation such as `\*`.
+    return code.group(2) if code else re.sub(r"\\([\\`*_{}\[\]()#+.!-])", r"\1", cell)
+
+
+def code_block(
+    lines: list[str],
+    first: int,
+    description: str,
+    source: Source,
+    revision: str,
+    path: str,
+    parsed: Parsed,
+) -> None:
+    """Extract commands from one shell code block.
+
+    In a block with `$ ` prompts, unprompted lines are output. Otherwise every
+    command line is an example. A `# comment` line describes the commands after
+    it, and a trailing comment describes its own command.
+    """
+    prompted = any(PROMPT.match(line) for line in lines)
+    comment = ""
+    pending: list[str] = []
+    own = ""
+    start = 0
+
+    def flush() -> None:
+        nonlocal pending
+        if pending:
+            text = own or comment or description
+            make_example(source, revision, path, start, text, "\n".join(pending), [], parsed)
+            pending = []
+
+    for offset, line in enumerate(lines):
+        if pending and pending[-1].rstrip().endswith("\\"):
+            pending.append(line)
+            continue
+        flush()
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if stripped.startswith("#"):
+            text = stripped.lstrip("# ")
+            if text.strip(" .:,").lower() not in CONNECTIVES:
+                comment = text
+            continue
+        if prompted and not PROMPT.match(line):
+            continue
+        text = PROMPT.sub("", line, count=1)
+        own = ""
+        trailing = INLINE_COMMENT.match(text.strip())
+        if trailing and not text.rstrip().endswith("\\"):
+            text, own = trailing.group(1), trailing.group(2)
+        start = first + offset
+        pending = [text]
+    flush()
+
+
+def markdown_document(
+    text: str, source: Source, revision: str, path: str, parsed: Parsed, *, indented: bool
+) -> None:
+    """Extract shell examples from fenced (and optionally indented) blocks and tables.
+
+    The paragraph just above a block describes it, falling back to the nearest
+    heading. A heading naming another platform suppresses its whole section.
+    """
+    lines = text.splitlines()
+    index = 0
+    if lines and lines[0].strip() == "---":
+        index = next(
+            (number + 1 for number in range(1, len(lines)) if lines[number].strip() == "---"),
+            len(lines),
+        )
+    paragraph: list[str] = []
+    heading = ""
+    previous = ""
+    forbidden = 0
+    blank = True
+
+    def emit(body: list[str], first: int) -> None:
+        nonlocal previous
+        if forbidden:
+            parsed.diagnostics.append(Diagnostic(source.id, path, first, "non-Linux section"))
+            return
+        description = inline(" ".join(paragraph)) or heading
+        if description.strip(" .:,").lower() in CONNECTIVES:
+            description = previous
+        previous = description
+        code_block(body, first, description, source, revision, path, parsed)
+
+    def table(rows: list[tuple[int, str]]) -> None:
+        def cells(line: str) -> list[str]:
+            return re.split(r"(?<!\\)\|", line.strip().strip("|"))
+
+        if len(rows) < 3:
+            return
+        header = [cell_text(cell).lower() for cell in cells(rows[0][1])]
+        command = next((k for k, name in enumerate(header) if name in COMMAND_COLUMNS), None)
+        meaning = next((k for k, name in enumerate(header) if name in DESCRIPTION_COLUMNS), None)
+        if command is None or meaning is None:
+            return
+        for number, line in rows[2:]:
+            values = cells(line)
+            if len(values) <= max(command, meaning):
+                continue
+            if forbidden:
+                parsed.diagnostics.append(Diagnostic(source.id, path, number, "non-Linux section"))
+                continue
+            make_example(
+                source,
+                revision,
+                path,
+                number,
+                inline(cell_text(values[meaning])),
+                cell_text(values[command]),
+                [],
+                parsed,
+            )
+
+    while index < len(lines):
+        line = lines[index]
+        stripped = line.strip()
+        fence = FENCE.match(line) if stripped.startswith(("```", "~~~")) else None
+        if fence:
+            marker = fence.group(1)
+            body: list[str] = []
+            index += 1
+            first = index + 1
+            while index < len(lines):
+                closing = lines[index].strip()
+                if closing.startswith(marker) and not closing.strip(marker[0]):
+                    break
+                body.append(lines[index])
+                index += 1
+            if fence.group(2).lower() in SHELL_FENCES:
+                emit(body, first)
+            paragraph, blank = [], True
+            index += 1
+            continue
+        if indented and blank and stripped and line.startswith(("    ", "\t")):
+            body = []
+            first = index + 1
+            while index < len(lines) and (
+                lines[index].startswith(("    ", "\t")) or not lines[index].strip()
+            ):
+                body.append(lines[index].removeprefix("    ").removeprefix("\t"))
+                index += 1
+            emit(body, first)
+            paragraph, blank = [], True
+            continue
+        if stripped.startswith("|"):
+            rows = []
+            while index < len(lines) and lines[index].strip().startswith("|"):
+                rows.append((index + 1, lines[index]))
+                index += 1
+            table(rows)
+            paragraph, blank = [], False
+            continue
+        title = HEADING.match(stripped)
+        if title:
+            level, heading = len(title.group(1)), inline(title.group(2))
+            previous = ""
+            if forbidden and level <= forbidden:
+                forbidden = 0
+            if FOREIGN.search(heading) and "linux" not in heading.lower():
+                forbidden = level
+            paragraph = []
+        elif stripped and not ATTRIBUTES.fullmatch(stripped):
+            if blank:
+                paragraph = []
+            paragraph.append(stripped)
+        blank = not stripped or bool(title)
+        index += 1
+
+
 def selected_files(root: Path, source: Source) -> list[Path]:
     candidates: set[Path] = set()
     for pattern in source.include:
@@ -203,6 +403,10 @@ def parse(root: Path, source: Source, revision: str) -> Parsed:
         parsed.files += 1
         if source.adapter == "tldr":
             tldr(text, source, revision, relative, parsed)
+        elif source.adapter in {"eg", "cheatsheets-zip", "devhints"}:
+            markdown_document(
+                text, source, revision, relative, parsed, indented=source.adapter == "eg"
+            )
         else:
             commented(text, source, revision, relative, parsed)
     return parsed

@@ -19,6 +19,26 @@
     "revision": "0bcedfb1d218d1218bbc0e9cf809ebca0d367e6d",
     "url": "https://github.com/chubin/cheat.sheets.git"
   },
+  "cheatsheets-zip": {
+    "expected_examples": 16,
+    "files": {
+      "LICENSE": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "source/_posts/grep.md": "aa99ecb9f6ece478cb3daf45c87b36a57acdfdbd484d7bf9d18106f2f4220b59"
+    },
+    "first_template": "grep [options] search_string",
+    "revision": "6fe843f01a81a2f87279eb629a806f318e6a4d72",
+    "url": "https://github.com/Fechin/reference.git"
+  },
+  "eg": {
+    "expected_examples": 5,
+    "files": {
+      "LICENSE.txt": "f76d0a7a23f5d7f93b29293fdc4764de411f6c47f4470a19eed732a210fd350b",
+      "eg/examples/du.md": "c5a8994099400e8649b96c1e7d14fab21dba0c49c5b1ef30ba50991725112df4"
+    },
+    "first_template": "du -h foo.txt",
+    "revision": "83e069c9e4f99b1052b69546726919a884138715",
+    "url": "https://github.com/srsudar/eg.git"
+  },
   "navi": {
     "expected_examples": 11,
     "files": {

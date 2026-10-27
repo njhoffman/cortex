@@ -2,6 +2,20 @@
 
 All approved updates are versioned with SemVer and annotated GitHub tags. New features increment the minor version; compatible fixes and maintenance increment the patch version. Interfaces remain under development before 1.0.0.
 
+## [0.3.0] - 2026-10-27
+
+### Added
+
+- eg (`srsudar/eg`) source, enabled by default. Reads its indented examples, drops command output shown after `$ ` prompts, and skips macOS sections.
+- Opt-in cheatsheets.zip source, covering 28 allowlisted command pages. Shell code blocks and command/description tables are imported.
+- Opt-in Devhints source, covering 27 command-line pages. Upstream declares no content license, so it ships disabled and sync warns while it is enabled.
+- `cortex sources [ID] [--json]` shows each source's license, last sync status, revision, check time, and parsed, rejected, and kept counts. With an ID it also lists rejection reasons and the most common missing commands. It works offline.
+- Sync reports (`--json`) include a `warnings` list.
+
+### Changed
+
+- Lines that contain only flags (such as `-i  # --include`) are now rejected as "flag-only fragment" for every source. Before, they were dropped later as unavailable commands. The parser version changed, so the next sync re-parses cached sources once.
+
 ## [0.2.1] - 2026-10-27
 
 ### Added
@@ -52,3 +66,5 @@ All approved updates are versioned with SemVer and annotated GitHub tags. New fe
 [0.2.0]: https://github.com/njhoffman/cortex/releases/tag/v0.2.0
 
 [0.2.1]: https://github.com/njhoffman/cortex/releases/tag/v0.2.1
+
+[0.3.0]: https://github.com/njhoffman/cortex/releases/tag/v0.3.0

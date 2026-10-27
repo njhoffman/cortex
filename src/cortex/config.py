@@ -12,7 +12,7 @@ from typing import Any
 
 from cortex.model import CortexError
 
-ADAPTERS = {"tldr", "cheat", "navi", "cheat-sheets", "custom"}
+ADAPTERS = {"tldr", "cheat", "navi", "cheat-sheets", "eg", "cheatsheets-zip", "devhints", "custom"}
 STARTER = """# Cortex configuration. Relative source URLs are not supported; use absolute paths.
 [general]
 platform = "linux"

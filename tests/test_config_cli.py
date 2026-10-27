@@ -10,7 +10,7 @@ from cortex.model import CortexError
 
 def test_starter_preserves_user_configuration(config):
     first = load(config.paths)
-    assert len([source for source in first.sources if source.enabled]) == 4
+    assert len([source for source in first.sources if source.enabled]) == 5
     content = config.paths.config.read_text() + '\n[categories]\nprintf = "my-shell"\n'
     config.paths.config.write_text(content)
     assert load(config.paths).categories["printf"] == "my-shell"
@@ -20,7 +20,7 @@ def test_starter_preserves_user_configuration(config):
 @pytest.mark.parametrize(
     "content",
     [
-        "[sources.devhints]\nenabled = true\n",
+        '[sources.future]\nurl = "x"\nadapter = "html"\n',
         "[sync]\nconcurrency = 0\n",
         '[general]\nplatform = "windows"\n',
         "[general]\nonly_available = false\n",

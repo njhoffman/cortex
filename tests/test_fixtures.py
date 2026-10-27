@@ -14,7 +14,7 @@ def test_revision_pinned_upstream_samples():
     registry = tomllib.loads((Path(__file__).parents[1] / "src/cortex/sources.toml").read_text())[
         "sources"
     ]
-    assert set(manifest) == {"tldr", "cheat", "navi", "cheat-sheets"}
+    assert set(manifest) == {"tldr", "cheat", "navi", "cheat-sheets", "eg", "cheatsheets-zip"}
     for name, fixture in manifest.items():
         root = FIXTURES / name
         assert len(fixture["revision"]) == 40

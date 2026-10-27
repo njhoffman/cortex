@@ -41,6 +41,8 @@ CATEGORIES = {
     "media": "ffmpeg ffprobe convert magick identify sox mpv yt-dlp",
     "shell": "echo printf read export alias unalias set unset command type hash source bash zsh sh true false test",
 }
+# License values meaning upstream has not granted reuse of its content.
+UNLICENSED = {"none-declared", "unresolved"}
 COMMAND_CATEGORY = {
     command: category for category, commands in CATEGORIES.items() for command in commands.split()
 }
@@ -368,6 +370,12 @@ def run(
             "offline": offline,
             "sources": [result.report() for result in results],
             "published": False,
+            "warnings": [
+                f"{source.id}: upstream declares no content license; "
+                "do not redistribute its examples"
+                for source in sources
+                if source.license in UNLICENSED
+            ],
         }
         if requested and not offline and all(result.failed for result in requested):
             report["error"] = "Every requested source refresh failed; active snapshot retained."

@@ -16,13 +16,15 @@ uv run cortex sync --offline
 uv run cortex sync --source tldr
 uv run cortex sync --force
 uv run cortex sync --json
+uv run cortex sources
+uv run cortex sources tldr
 uv run cortex --version
 uv run cortex -v
 uv run cortex -h
 uv run cortex sync --help
 ```
 
-`sync` refreshes tldr, cheat, navi, and cheat.sh's original cheatsheet repository by default. It never runs imported commands or navi variable generators. Failed sources retain their last usable cache; publishing replaces the active collection atomically. Every sync rechecks command availability, including offline syncs.
+`sync` refreshes tldr, cheat, navi, cheat.sh's original cheatsheet repository, and eg by default. It never runs imported commands or navi variable generators. Failed sources retain their last usable cache; publishing replaces the active collection atomically. Every sync rechecks command availability, including offline syncs.
 
 In a terminal, sync shows an animated purple-to-cyan-to-green progress bar, live source statuses, checked-example and written-file counts, and elapsed time. Updated or unchanged sources appear green, stale caches amber, and failed sources red. The bar reaches 100% after the new catalog is published.
 
@@ -55,7 +57,16 @@ include = ["*"]
 license = "personal"
 ```
 
-Use `cortex --config /path/to/config.toml sync` for another config. Sources with adapters scheduled for later phases are disabled in the registry; enabling an unimplemented adapter reports a configuration error.
+Use `cortex --config /path/to/config.toml sync` for another config. Enabling an adapter that does not exist reports a configuration error.
+
+Two more sources ship disabled and can be enabled with `enabled = true`:
+
+- `cheatsheets-zip`: an allowlist of command pages from [cheatsheets.zip](https://cheatsheets.zip/) (GPL-3.0).
+- `devhints`: command-line pages from [devhints.io](https://devhints.io/). Upstream declares no content license, so sync prints a warning while it is enabled; keep its examples to personal use.
+
+For these Markdown sources Cortex reads shell code blocks and command/description tables. It skips flag-only lines, command output after `$ ` prompts, and sections headed for other platforms.
+
+`cortex sources` lists every configured source with its license, last sync status, revision, check time, and parsed, rejected, and kept example counts. `cortex sources <id>` adds rejection reasons, a sample location for each, and the most common missing commands. It reads only local files; `--json` prints the same data.
 
 Put personal `.cheat` or `.md` files in `~/.local/share/cortex/custom/`, using a description comment followed by a shell command. These files are never rewritten:
 

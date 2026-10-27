@@ -35,7 +35,6 @@ license_files = ["LICENSE"]
 priority = 40
 
 [sources.eg]
-enabled = false
 url = "https://github.com/srsudar/eg.git"
 adapter = "eg"
 include = ["eg/examples/*.md"]
@@ -43,18 +42,80 @@ license = "MIT"
 license_files = ["LICENSE.txt"]
 priority = 50
 
+# Upstream declares no content license (no LICENSE file; GitHub reports none).
+# Sync warns when this source is enabled.
 [sources.devhints]
 enabled = false
 url = "https://github.com/rstacruz/cheatsheets.git"
 adapter = "devhints"
-license = "unresolved"
+# Command-line pages only; shell-language references (bash, zsh, fish) are excluded.
+include = [
+    "adb.md",
+    "animated_gif.md",
+    "composer.md",
+    "cron.md",
+    "curl.md",
+    "ffmpeg.md",
+    "find.md",
+    "gnupg.md",
+    "grep.md",
+    "homebrew.md",
+    "httpie.md",
+    "man.md",
+    "mise.md",
+    "ncftp.md",
+    "pass.md",
+    "pm2.md",
+    "rclone.md",
+    "rename.md",
+    "rsync.md",
+    "scp.md",
+    "screen.md",
+    "sed.md",
+    "tar.md",
+    "tmux.md",
+    "top.md",
+    "watchexec.md",
+    "yum.md",
+]
+license = "none-declared"
 priority = 60
 
 [sources.cheatsheets-zip]
 enabled = false
 url = "https://github.com/Fechin/reference.git"
 adapter = "cheatsheets-zip"
-include = ["source/_posts/*.md"]
+# Explicit allowlist: the site's "Linux Command" pages plus selected CLI tools.
+include = [
+    "source/_posts/awk.md",
+    "source/_posts/chmod.md",
+    "source/_posts/cron.md",
+    "source/_posts/curl.md",
+    "source/_posts/docker.md",
+    "source/_posts/find.md",
+    "source/_posts/git.md",
+    "source/_posts/github-cli.md",
+    "source/_posts/gnupg.md",
+    "source/_posts/grep.md",
+    "source/_posts/kubernetes.md",
+    "source/_posts/lsof.md",
+    "source/_posts/nc.md",
+    "source/_posts/netstat.md",
+    "source/_posts/nginx.md",
+    "source/_posts/nmap.md",
+    "source/_posts/npm.md",
+    "source/_posts/openssl.md",
+    "source/_posts/pandoc.md",
+    "source/_posts/pm2.md",
+    "source/_posts/screen.md",
+    "source/_posts/sdkman.md",
+    "source/_posts/sed.md",
+    "source/_posts/ssh.md",
+    "source/_posts/systemd.md",
+    "source/_posts/taskset.md",
+    "source/_posts/telnet.md",
+    "source/_posts/tmux.md",
+]
 license = "GPL-3.0"
 license_files = ["LICENSE"]
 priority = 70

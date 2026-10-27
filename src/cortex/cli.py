@@ -10,6 +10,7 @@ from cortex import __version__
 from cortex.config import Paths, load
 from cortex.model import CortexError
 from cortex.progress import SyncDisplay, clean, style, summary, use_color
+from cortex.status import collect, detail, table
 from cortex.sync import run
 
 
@@ -43,13 +44,40 @@ def parser() -> argparse.ArgumentParser:
         default="auto",
         help="terminal colors (default: auto; honors NO_COLOR and TERM=dumb)",
     )
+    sources = commands.add_parser(
+        "sources", help="show configured sources and their last sync status (offline)"
+    )
+    sources.add_argument("id", nargs="?", help="show one source with rejection reasons")
+    sources.add_argument("--json", action="store_true", help="write source status as JSON")
+    sources.add_argument(
+        "--color",
+        choices=("auto", "always", "never"),
+        default="auto",
+        help="terminal colors (default: auto; honors NO_COLOR and TERM=dumb)",
+    )
     return root
+
+
+def show_sources(config, args: argparse.Namespace) -> int:
+    rows = collect(config)
+    if args.id:
+        rows = [row for row in rows if row["id"] == args.id]
+        if not rows:
+            raise CortexError(f"Unknown source: {args.id}")
+    if args.json:
+        print(json.dumps(rows[0] if args.id else rows, indent=2, sort_keys=True))
+        return 0
+    colored = use_color(sys.stdout, args.color)
+    print(detail(rows[0], colored=colored) if args.id else table(rows, colored=colored))
+    return 0
 
 
 def main(argv: list[str] | None = None) -> int:
     args = parser().parse_args(argv)
     try:
         config = load(Paths.discover(args.config))
+        if args.command == "sources":
+            return show_sources(config, args)
         with SyncDisplay(
             [source.id for source in config.sources if source.enabled],
             color=args.color,
@@ -63,6 +91,11 @@ def main(argv: list[str] | None = None) -> int:
                 progress=display.update,
             )
             display.finish(status)
+        for warning in report.get("warnings", []):
+            print(
+                style(f"cortex: warning: {clean(warning)}", "warning", display.colored),
+                file=sys.stderr,
+            )
         if "error" in report:
             print(
                 style(f"cortex: {clean(report['error'])}", "error", display.colored),

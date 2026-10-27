@@ -1,6 +1,6 @@
 # Task checklist
 
-Current approved update: Claude context and Phase 2-4 checklist, released as `v0.2.1`.
+Current approved update: eg, cheatsheets.zip, and Devhints adapters plus `cortex sources`, released as `v0.3.0`.
 
 ## Visual sync feedback — complete
 
@@ -48,20 +48,23 @@ Validation: 90 offline tests, including 16 terminal/progress tests; full-corpus 
 - [x] Add a manual release-build retry path and publish patch version `v0.1.1`.
 - [x] Verify the GitHub release build and wheel/source/checksum assets.
 
-## Phase 2 — collection coverage (not started)
+## Phase 2 — collection coverage (in progress)
 
 See `PLAN.md` section 7, Phase 2. Acceptance: enabling any implemented source joins the same sync/merge; disabling removes only its contributions.
 
-- [ ] **eg adapter.** (p2) [feature] Parse `srsudar/eg` `eg/examples/*.md` with alias metadata.
-  Registry entry `sources.eg` exists but is disabled; `config.ADAPTERS` lacks `eg`, so enabling it is a config error.
-  Exclude examples for other operating systems; add revision-pinned fixtures under `tests/fixtures/eg/`.
-- [ ] **cheatsheets.zip adapter.** (p2) [feature] Allowlisted `source/_posts/*.md` pages with table/code-block extraction.
-  Must separate complete shell examples from flag tables, regex syntax, and terminal output (e.g. the grep page).
-  Registry entry `sources.cheatsheets-zip` is disabled; GPL-3.0 attribution goes in `ATTRIBUTION.md`.
-- [ ] **Devhints adapter and license.** (p2) [feature] Adapter for `rstacruz/cheatsheets` command pages; resolve content license.
-  `sources.toml` records `license = "unresolved"` with no include list. Keep it non-default until licensing is established.
-- [ ] **Source status command.** (p2) [feature] List sources with revision, freshness, counts, and rejection reasons.
-  Data is already in cache metadata and per-source diagnostics; expose it via a `cortex sources` (or `sync --status`) command with `--json`.
+- [x] **eg adapter.** (p2) [feature] Parse `srsudar/eg` `eg/examples/*.md`; enabled by default.
+  Indented blocks, `$ ` prompt output dropped, OSX sections skipped. `aliases.json` deferred to Phase 3 search.
+- [x] **cheatsheets.zip adapter.** (p2) [feature] 28 allowlisted pages; shell fences plus command/description tables.
+  Opt-in. Flag-only lines and syntax tables are skipped; real-corpus sync keeps 824 examples.
+- [x] **Devhints adapter.** (p2) [feature] 27 allowlisted CLI pages, shared Markdown parser; disabled, `none-declared` license.
+  Sync warns while it is enabled. Tests use synthetic Markdown, not upstream excerpts.
+- [x] **Source status command.** (p2) [feature] `cortex sources [ID] [--json]`, offline, from caches and the catalog.
+- [ ] **Devhints content license.** (p3) [chore] Ask `rstacruz/cheatsheets` to declare a content license.
+  The repo has no LICENSE file and GitHub reports none, so Devhints stays disabled with a warning.
+  If upstream adds one, update `license`/`license_files` in `src/cortex/sources.toml` and drop the warning case.
+- [ ] **Markdown parser noise.** (p3) [refactor] Diagrams and keybinding tables in shell fences reach the availability filter.
+  E.g. cheatsheets.zip `awk.md` box-drawing lines and `tmux.md`/`screen.md` key tables become "unsupported"/"unavailable"
+  diagnostics instead of extraction rejections. Harmless to output, but it inflates the counts `cortex sources` shows.
 - [ ] **awesome-cheatsheets adapter.** (p3) [feature] Opt-in adapter for selected `tools/` material and `languages/bash.sh` recipes.
   Exclude language lessons, editor keystrokes, and macOS sections. Needs a registry entry.
 - [ ] **linux-command collection.** (p3) [feature] Opt-in, Chinese-language `jaywcjlove/linux-command` `command/*.md` source.
@@ -75,6 +78,7 @@ Acceptance: lookup works offline; additions and remembered removals survive upst
 
 - [ ] **list/show/search commands.** (p2) [feature] `cortex list`, `cortex show <command>`, `cortex search <query>` on the active catalog.
   Resolve `current` once per operation; search names, subcommands, descriptions, templates, categories; exact command matches first.
+  Use eg's `aliases.json` (e.g. `egrep` -> `grep`, `clang` -> `gcc`) so alias names find the right page.
 - [ ] **add/remove/restore commands.** (p2) [feature] Edit `custom/` and `exclusions.toml`, then rebuild offline.
   `restore` reverses a remembered exclusion by ID or command; never rewrite existing user files destructively.
 - [ ] **Origin and license inspection.** (p3) [feature] Structured (`--json`) query output plus per-example origin/license display.

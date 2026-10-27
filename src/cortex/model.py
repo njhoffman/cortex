@@ -8,7 +8,7 @@ from dataclasses import asdict, dataclass, field
 from typing import Any
 
 SCHEMA_VERSION = 1
-PARSER_VERSION = 1
+PARSER_VERSION = 2
 
 
 class CortexError(Exception):
