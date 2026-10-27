@@ -50,9 +50,9 @@ Validation: 90 offline tests, including 16 terminal/progress tests; full-corpus 
 
 ## Later phases — not started
 
-- [ ] Phase 2: additional collection adapters and source inspection.
-- [ ] Phase 3: local lookup and personal management commands.
-- [ ] Phase 4: configurable display commands and zsh prompt integration.
+- [ ] (p3) [feature] Phase 2: additional collection adapters and source inspection.
+- [ ] (p3) [feature] Phase 3: local lookup and personal management commands.
+- [ ] (p3) [feature] Phase 4: configurable display commands and zsh prompt integration.
 
 ## Validation record
 
