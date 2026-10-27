@@ -1,6 +1,6 @@
 # Task checklist
 
-Current approved update: eg, cheatsheets.zip, and Devhints adapters plus `cortex sources`, released as `v0.3.0`.
+Current approved update: `list`/`show`/`search` and `add`/`remove`/`restore`, released as `v0.4.0`.
 
 ## Visual sync feedback — complete
 
@@ -72,16 +72,18 @@ See `PLAN.md` section 7, Phase 2. Acceptance: enabling any implemented source jo
 - [ ] **Bounded HTTP transport.** (p3) [feature] Configured-URL HTTP fetches with ETag/Last-Modified and rate limits.
   Only for sources lacking original files; also enables an opt-in, disabled-by-default cht.sh single-command lookup.
 
-## Phase 3 — local lookup and personal management (not started)
+## Phase 3 — local lookup and personal management (complete except aliases)
 
 Acceptance: lookup works offline; additions and remembered removals survive upstream updates and cache recreation.
 
-- [ ] **list/show/search commands.** (p2) [feature] `cortex list`, `cortex show <command>`, `cortex search <query>` on the active catalog.
-  Resolve `current` once per operation; search names, subcommands, descriptions, templates, categories; exact command matches first.
-  Use eg's `aliases.json` (e.g. `egrep` -> `grep`, `clang` -> `gcc`) so alias names find the right page.
-- [ ] **add/remove/restore commands.** (p2) [feature] Edit `custom/` and `exclusions.toml`, then rebuild offline.
-  `restore` reverses a remembered exclusion by ID or command; never rewrite existing user files destructively.
-- [ ] **Origin and license inspection.** (p3) [feature] Structured (`--json`) query output plus per-example origin/license display.
+- [x] **list/show/search commands.** (p2) [feature] `cortex list`, `show <command> [sub]`, `search <terms>`; offline, `--json`.
+- [x] **add/remove/restore commands.** (p2) [feature] Append to `custom/`, rewrite `exclusions.toml` arrays, offline rebuild.
+- [x] **Origin and license inspection.** (p3) [feature] `show`/`search --origins` and `--json`.
+- [ ] **eg aliases in lookup.** (p3) [feature] Save eg's `aliases.json` into the snapshot so `show egrep` finds `grep`.
+  The eg adapter ignores it today (e.g. `egrep` -> `grep`, `clang` -> `gcc`). Needs an adapter output and a snapshot file.
+- [ ] **`.` builtin loses its command name.** (p2) [bug] Examples for `. file` publish with `command = ""`.
+  `required_commands` is `['.']` but `command` is empty, so `cortex list` shows a blank row and `show .` finds nothing.
+  The same path lets `ed` cheatsheet lines like `. end active edit` through. See `inspect` in `src/cortex/shell.py`.
 
 ## Phase 4 — terminal presentation and zsh integration (not started)
 

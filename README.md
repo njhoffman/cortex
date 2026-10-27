@@ -2,7 +2,7 @@
 
 Cortex refreshes command cheatsheets from several collections and merges Linux-compatible examples for commands available on your machine into one offline catalog.
 
-Requires Linux, Python 3.11+, and Git. Interactive search and shell widgets are planned; this release implements the sync pipeline.
+Requires Linux, Python 3.11+, and Git. It syncs the catalog and supports offline lookup and personal edits; fzf/tmux display and a zsh widget are planned.
 
 ```sh
 uv sync
@@ -18,6 +18,7 @@ uv run cortex sync --force
 uv run cortex sync --json
 uv run cortex sources
 uv run cortex sources tldr
+uv run cortex search extract archive
 uv run cortex --version
 uv run cortex -v
 uv run cortex -h
@@ -76,6 +77,29 @@ find . -type f -size +100M
 ```
 
 Remember removals in `~/.local/share/cortex/exclusions.toml` with `ids = ["<catalog-example-id>"]` or `commands = ["find"]`. IDs remain stable across description and source changes. Custom additions still undergo Linux, shell, and availability filtering.
+
+## Lookup and personal changes
+
+These commands read the active snapshot and never use the network:
+
+```sh
+cortex list [--category archives]        # commands with example counts
+cortex show tar                          # every tar example, with short IDs
+cortex show git commit --origins         # one subcommand, plus sources and licenses
+cortex search extract archive            # every term must match; command names rank first
+```
+
+`show` and `search` accept `--json`. Templates are printed without styling so they can be copied. `search` returns up to 50 examples (`--limit N`) and exits `1` when nothing matches.
+
+```sh
+cortex add "tar -tvf archive.tar | less" -d "Page through an archive listing"
+cortex remove 6d66139bc8                 # an ID prefix from `show` (6+ characters)
+cortex remove --command 7z               # every example for a command
+cortex restore                           # list remembered removals
+cortex restore 6d66139bc8                # or: cortex restore --command 7z
+```
+
+`add` checks the command with the same shell parser sync uses and appends it to `custom/<command>.cheat`; earlier lines are never changed. It warns when the command is not installed, because sync will skip it. `remove` and `restore` rewrite the `ids` and `commands` arrays in `exclusions.toml`, keeping comment lines at the top of the file. Removing a custom example hides it the same way; the custom file is left alone. Each change runs an offline rebuild; pass `--no-sync` to batch several changes, then run `cortex sync --offline`. Removed examples are kept in each snapshot's `excluded.jsonl`.
 
 Exit status is `0` for success, `2` for a published collection with failed or missing sources, and `1` for a fatal error or an online refresh where every requested source fails. `--json` prints a structured report to stdout; progress goes to stderr. Per-entry rejection diagnostics are retained in the cache.
 

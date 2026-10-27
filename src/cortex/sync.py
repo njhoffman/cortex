@@ -48,6 +48,10 @@ COMMAND_CATEGORY = {
 }
 
 
+def catalog_order(example: Example) -> tuple[str, str, str, str]:
+    return example.command, example.category, example.template, example.id
+
+
 @contextmanager
 def sync_lock(data: Path):
     data.mkdir(parents=True, exist_ok=True)
@@ -96,7 +100,7 @@ def assemble(
     config: Config,
     results: list[SourceResult],
     progress: Callable[[SyncEvent], None] | None = None,
-) -> tuple[list[Example], dict, list, dict]:
+) -> tuple[list[Example], dict, list, dict, list[Example]]:
     availability = Availability(config.shell)
     excluded_ids, excluded_commands = read_exclusions(config.paths.data / "exclusions.toml")
     unique: dict[str, Example] = {}
@@ -155,20 +159,23 @@ def assemble(
     if progress:
         progress(SyncEvent("filter", total, total, message="Checking installed commands"))
         progress(SyncEvent("merge", message="Combining examples and applying exclusions"))
-    catalog = []
+    catalog, excluded = [], []
     for example in unique.values():
+        example.origins.sort(key=lambda origin: (origin.source, origin.path, origin.line))
         if example.id in excluded_ids or example.command in excluded_commands:
             counts["excluded"] += 1
-            continue
-        example.origins.sort(key=lambda origin: (origin.source, origin.path, origin.line))
-        catalog.append(example)
-    catalog.sort(key=lambda item: (item.command, item.category, item.template, item.id))
+            excluded.append(example)
+        else:
+            catalog.append(example)
+    catalog.sort(key=catalog_order)
+    excluded.sort(key=catalog_order)
     counts["retained"] = len(catalog)
     return (
         catalog,
         dict(counts),
         diagnostics,
         {key: sorted(value) for key, value in sorted(inventories.items())},
+        excluded,
     )
 
 
@@ -195,6 +202,7 @@ def publish(
     report: dict,
     results: list[SourceResult],
     progress: Callable[[SyncEvent], None] | None = None,
+    excluded: list[Example] | None = None,
 ) -> Path:
     root = config.paths.data / "snapshots"
     root.mkdir(parents=True, exist_ok=True)
@@ -215,12 +223,14 @@ def publish(
                 )
 
         writing(0)
-        (temporary / "catalog.jsonl").write_text(
-            "".join(
-                json.dumps(example.to_dict(), ensure_ascii=False, sort_keys=True) + "\n"
-                for example in catalog
+        # Removed examples are kept beside the catalog so `cortex restore` can describe them.
+        for name, examples in (("catalog.jsonl", catalog), ("excluded.jsonl", excluded or [])):
+            (temporary / name).write_text(
+                "".join(
+                    json.dumps(example.to_dict(), ensure_ascii=False, sort_keys=True) + "\n"
+                    for example in examples
+                )
             )
-        )
         writing(1)
         (temporary / "commands.json").write_text(
             json_text(
@@ -387,13 +397,13 @@ def run(
             report["error"] = "No usable inputs; active snapshot retained."
             atomic_text(config.paths.cache / "last-sync.json", json_text(report))
             return 1, report
-        catalog, counts, diagnostics, inventories = assemble(config, inputs, progress)
+        catalog, counts, diagnostics, inventories, excluded = assemble(config, inputs, progress)
         report["counts"] = counts
         report["commands"] = len({example.command for example in catalog})
         atomic_text(config.paths.cache / "diagnostics.json", json_text(diagnostics))
         atomic_text(config.paths.cache / "source-inventory.json", json_text(inventories))
         report["published"] = True
-        destination = publish(config, catalog, report, inputs, progress)
+        destination = publish(config, catalog, report, inputs, progress, excluded)
         report["snapshot"] = str(destination)
         atomic_text(config.paths.cache / "last-sync.json", json_text(report))
         if progress:

@@ -2,6 +2,20 @@
 
 All approved updates are versioned with SemVer and annotated GitHub tags. New features increment the minor version; compatible fixes and maintenance increment the patch version. Interfaces remain under development before 1.0.0.
 
+## [0.4.0] - 2026-10-27
+
+### Added
+
+- `cortex list [--category C]`, `cortex show <command> [subcommand]`, and `cortex search <terms...>` read the active catalog offline. Search requires every term to match and ranks command names first. `show` and `search` print short example IDs, and accept `--origins` (source, location, license) and `--json`.
+- `cortex add "<command>" -d "<description>"` checks the command with the sync shell parser and appends it to `custom/<command>.cheat`. It warns when the command is not installed.
+- `cortex remove <id-prefix>` / `--command NAME` and `cortex restore` (same arguments; with none, lists removals) edit `exclusions.toml`. Comment lines at the top of the file are kept.
+- `add`, `remove`, and `restore` rebuild the catalog offline right away; `--no-sync` skips the rebuild.
+- Snapshots now include `excluded.jsonl` with the removed examples.
+
+### Fixed
+
+- Output piped into `head` or a pager that exits early no longer prints a BrokenPipe traceback.
+
 ## [0.3.0] - 2026-10-27
 
 ### Added
@@ -68,3 +82,5 @@ All approved updates are versioned with SemVer and annotated GitHub tags. New fe
 [0.2.1]: https://github.com/njhoffman/cortex/releases/tag/v0.2.1
 
 [0.3.0]: https://github.com/njhoffman/cortex/releases/tag/v0.3.0
+
+[0.4.0]: https://github.com/njhoffman/cortex/releases/tag/v0.4.0
