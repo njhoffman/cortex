@@ -1,4 +1,15 @@
 {
+  "awesome-cheatsheets": {
+    "expected_examples": 175,
+    "files": {
+      "LICENSE": "fbe6d936c76c9927960ceaa6d0b782b234d4b306a2f5672c1cb0f3e3f16766df",
+      "languages/bash.sh": "7b38ab8c81ebbf2a817ae7706b4687be9f820489450278f0546479ea0d956dcb",
+      "tools/docker.sh": "7398c6316583eb042be64704dc6d3225986377158f908c78fe0d9fcf2ce69969"
+    },
+    "first_template": "ls",
+    "revision": "774445f64658289826909165d4ef446f4cf59f13",
+    "url": "https://github.com/LeCoupa/awesome-cheatsheets.git"
+  },
   "cheat": {
     "expected_examples": 17,
     "files": {
@@ -33,6 +44,7 @@
     "expected_examples": 5,
     "files": {
       "LICENSE.txt": "f76d0a7a23f5d7f93b29293fdc4764de411f6c47f4470a19eed732a210fd350b",
+      "eg/examples/aliases.json": "608d65a29a999ff9c6039575168fc351aca4c4b2ec0538324c10bf0920f4a8d7",
       "eg/examples/du.md": "c5a8994099400e8649b96c1e7d14fab21dba0c49c5b1ef30ba50991725112df4"
     },
     "first_template": "du -h foo.txt",

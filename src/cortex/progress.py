@@ -81,6 +81,7 @@ class SyncDisplay:
         self.animated = self.colored and self.stream.isatty()
         self.interval = interval
         self.sources = {name: ("waiting", 0, "") for name in sources}
+        self.name_width = max([15, *map(len, sources)])
         self.event = SyncEvent("prepare", message="Preparing sync")
         self.fraction = 0.0
         self.started = time.monotonic()
@@ -164,7 +165,7 @@ class SyncDisplay:
             suffix = f" — {clean(event.message)}" if event.message else ""
             print(
                 style(
-                    f"{event.source:<16} {event.status:<10} {event.examples:>6} examples{suffix}",
+                    f"{event.source:<{self.name_width + 1}} {event.status:<10} {event.examples:>6} examples{suffix}",
                     color,
                     self.colored,
                 ),
@@ -231,7 +232,10 @@ class SyncDisplay:
                 else ""
             )
             rows.append(
-                line(f"  {icon} {name:<15} {status:<10} {count}", self._status_color(status))
+                line(
+                    f"  {icon} {name:<{self.name_width}} {status:<10} {count}",
+                    self._status_color(status),
+                )
             )
         rows.append("")
         if width >= 24:

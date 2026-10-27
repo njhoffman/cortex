@@ -2,10 +2,21 @@ import json
 
 import pytest
 
+from cortex.cache import SourceResult
 from cortex.cli import main
-from cortex.lookup import commands, find_by_id, load_snapshot, render, score, search, show
+from cortex.config import Source
+from cortex.lookup import (
+    commands,
+    find_by_id,
+    load_snapshot,
+    render,
+    score,
+    search,
+    show,
+    show_alias,
+)
 from cortex.model import CortexError, Example
-from cortex.sync import run
+from cortex.sync import merge_aliases, run
 
 SHEET = (
     "# Print a greeting:\nprintf 'hello\\n'\n\n"
@@ -94,3 +105,63 @@ def test_lookup_cli(cli, published, capsys):
     assert json.loads(capsys.readouterr().out)[0]["template"] == "printf 'hello\\n'"
     assert cli(["search", "zzz-no-match"]) == 1
     assert cli(["search", "x", "--limit", "0"]) == 1
+
+
+@pytest.fixture
+def aliased(config, local_source, tmp_path):
+    local_source(text=SHEET)
+    root = tmp_path / "upstream-eg"
+    (root / "eg/examples").mkdir(parents=True)
+    (root / "eg/examples/printf.md").write_text("# printf\n\nPrint:\n\n    printf ok\n")
+    (root / "eg/examples/aliases.json").write_text(
+        '{"pf": "print", "print": "printf", "cd": "printf", "ghost": "nowhere"}'
+    )
+    include = ["eg/examples/*.md", "eg/examples/aliases.json"]
+    config.sources.append(Source("eg", str(root), "eg", transport="local", include=include))
+    assert run(config)[0] == 0
+    return load_snapshot(config)
+
+
+def test_merge_aliases_priority_chains_and_cycles():
+    def result(name, aliases):
+        return SourceResult(Source(name, "x", "eg"), "local", aliases=aliases)
+
+    merged = merge_aliases(
+        [
+            result("first", {"a": "b", "x": "y", "y": "x"}),
+            result("second", {"a": "z", "b": "c"}),
+        ]
+    )
+    assert merged == {"a": "c", "b": "c"}
+
+
+def test_snapshot_aliases_and_show_fallback(aliased, config):
+    assert aliased.aliases == {
+        "cd": "printf",
+        "ghost": "nowhere",
+        "pf": "printf",
+        "print": "printf",
+    }
+    examples, note = show_alias(aliased, "pf")
+    assert {item.command for item in examples} == {"printf"}
+    assert note == "pf is an alias of printf; showing printf examples"
+    examples, note = show_alias(aliased, "cd")
+    assert [item.command for item in examples] == ["cd"]
+    assert note == "cd is an alias of printf; see also `cortex show printf`"
+    assert show_alias(aliased, "ghost") == (
+        [],
+        "ghost is an alias of nowhere, which has no examples either",
+    )
+    assert show_alias(aliased, "printf")[1] == ""
+    # Snapshots published before aliases existed still load.
+    (aliased.path / "aliases.json").unlink()
+    assert load_snapshot(config).aliases == {}
+
+
+def test_show_cli_follows_aliases(cli, aliased, capsys):
+    assert cli(["show", "pf", "--color", "never", "--display", "stdout"]) == 0
+    captured = capsys.readouterr()
+    assert "printf 'hello" in captured.out
+    assert "cortex: pf is an alias of printf" in captured.err
+    assert cli(["show", "ghost"]) == 1
+    assert "which has no examples either" in capsys.readouterr().err

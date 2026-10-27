@@ -12,7 +12,17 @@ from typing import Any
 
 from cortex.model import CortexError
 
-ADAPTERS = {"tldr", "cheat", "navi", "cheat-sheets", "eg", "cheatsheets-zip", "devhints", "custom"}
+ADAPTERS = {
+    "tldr",
+    "cheat",
+    "navi",
+    "cheat-sheets",
+    "eg",
+    "cheatsheets-zip",
+    "devhints",
+    "awesome-cheatsheets",
+    "custom",
+}
 STARTER = """# Cortex configuration. Relative source URLs are not supported; use absolute paths.
 [general]
 platform = "linux"
@@ -73,6 +83,8 @@ class Source:
     language: str = "en"
     platforms: list[str] = field(default_factory=lambda: ["linux"])
     shell: str = "posix"
+    # Per-file section allowlists: relative path -> section titles to keep.
+    sections: dict[str, list[str]] = field(default_factory=dict)
 
     def fingerprint_data(self) -> dict[str, Any]:
         return asdict(self)
@@ -162,6 +174,11 @@ def load(paths: Paths) -> Config:
                 for pattern in source.include + source.exclude + source.license_files:
                     if Path(pattern).is_absolute() or ".." in Path(pattern).parts:
                         raise CortexError(f"{key}: unsafe path pattern {pattern!r}")
+                if not isinstance(source.sections, dict) or not all(
+                    isinstance(v, list) and all(isinstance(x, str) for x in v)
+                    for v in source.sections.values()
+                ):
+                    raise CortexError(f"{key}: sections must map paths to arrays of titles.")
                 if type(source.priority) is not int:
                     raise CortexError(f"{key}: priority must be an integer.")
                 if source.shell not in {"posix", "bash", "zsh", "sh"}:

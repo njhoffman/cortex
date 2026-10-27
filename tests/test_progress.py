@@ -225,3 +225,13 @@ def test_source_errors_cannot_inject_terminal_controls(terminal):
         display.finish(1)
     assert "\x1b[2J" not in terminal.getvalue()
     assert "error text" in terminal.getvalue()
+
+
+def test_plain_log_aligns_long_source_names():
+    stream = io.StringIO()
+    names = ["tldr", "awesome-cheatsheets"]
+    with SyncDisplay(names, stream=stream, color="never", interval=60) as display:
+        for name in names:
+            display.update(SyncEvent("source", source=name, status="updated", examples=5))
+    lines = stream.getvalue().splitlines()
+    assert [line.index("updated") for line in lines] == [21, 21]

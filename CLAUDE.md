@@ -8,8 +8,9 @@ installed on this machine.
 
 - Requirements: `OUTLINE.md`. Design, source research, and phase plan: `PLAN.md`.
   Active checklist: `TASK.md` (`TODO.md` symlinks to it; keep one checklist).
-- Phases 0-1 (sync pipeline), the progress dashboard, and most of Phase 2 (eg, cheatsheets.zip,
-  Devhints adapters; `cortex sources`) and Phase 3 lookup/management are done.
+- Phases 0-1 (sync pipeline), the progress dashboard, most of Phase 2 (eg, cheatsheets.zip,
+  Devhints, awesome-cheatsheets adapters; `cortex sources`), and Phase 3 lookup/management
+  (with alias fallback) are done.
   Remaining work is in `TASK.md`.
 - Commands: `just setup`, `just check` (lint, tests, version agreement), `just build`,
   `just sync --offline`. Release flow: `RELEASING.md` (`just bump`, then `just release`).

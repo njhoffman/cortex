@@ -37,7 +37,7 @@ priority = 40
 [sources.eg]
 url = "https://github.com/srsudar/eg.git"
 adapter = "eg"
-include = ["eg/examples/*.md"]
+include = ["eg/examples/*.md", "eg/examples/aliases.json"]
 license = "MIT"
 license_files = ["LICENSE.txt"]
 priority = 50
@@ -119,3 +119,39 @@ include = [
 license = "GPL-3.0"
 license_files = ["LICENSE"]
 priority = 70
+
+# Opt-in. Command-per-line scripts plus kubernetes.md; editor keystrokes, language
+# lessons, macOS, and config-file sheets are not selected.
+[sources.awesome-cheatsheets]
+enabled = false
+url = "https://github.com/LeCoupa/awesome-cheatsheets.git"
+adapter = "awesome-cheatsheets"
+include = [
+    "languages/bash.sh",
+    "tools/aws.sh",
+    "tools/curl.sh",
+    "tools/docker.sh",
+    "tools/drush.sh",
+    "tools/ffmpeg.sh",
+    "tools/git.sh",
+    "tools/heroku.sh",
+    "tools/jq.sh",
+    "tools/kubernetes.md",
+    "tools/nanobox_cli.sh",
+    "tools/nginx.sh",
+    "tools/pm2.sh",
+    "tools/ubuntu.sh",
+]
+license = "MIT"
+license_files = ["LICENSE"]
+priority = 80
+
+[sources.awesome-cheatsheets.sections]
+# bash.sh is mostly keybindings and syntax lessons; nginx.sh is mostly config.
+"languages/bash.sh" = [
+    "FILE COMMANDS",
+    "DIRECTORY COMMANDS",
+    "SSH, SYSTEM INFO & NETWORK COMMANDS",
+    "PROCESS HANDLING",
+]
+"tools/nginx.sh" = ["NGINX"]

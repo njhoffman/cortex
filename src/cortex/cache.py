@@ -44,6 +44,7 @@ class SourceResult:
     message: str = ""
     failed: bool = False
     checked_at: str = ""
+    aliases: dict[str, str] = field(default_factory=dict)
 
     def report(self) -> dict:
         return {
@@ -110,6 +111,7 @@ class SourceCache:
                 [Diagnostic(**item) for item in data["diagnostics"]],
                 data["licenses"],
                 checked_at=meta.get("checked_at", ""),
+                aliases=data.get("aliases", {}),
             )
             return meta, result
         except (OSError, ValueError, KeyError, TypeError) as exc:
@@ -245,6 +247,7 @@ class SourceCache:
                             "examples": [example.to_dict() for example in parsed.examples],
                             "diagnostics": [asdict(item) for item in parsed.diagnostics],
                             "licenses": licenses,
+                            "aliases": parsed.aliases,
                             "parser_version": PARSER_VERSION,
                         }
                     ),
@@ -276,6 +279,7 @@ class SourceCache:
                     parsed.diagnostics,
                     licenses,
                     checked_at=checked_at,
+                    aliases=parsed.aliases,
                 )
         except (CortexError, OSError, ValueError, tarfile.TarError) as exc:
             if loaded:

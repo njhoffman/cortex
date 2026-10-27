@@ -9,7 +9,7 @@ import sys
 
 from cortex import __version__
 from cortex.config import DISPLAY_MODES, Paths, load
-from cortex.display import highlight, open_pane, resolve_mode, select, to_stdout
+from cortex.display import highlight, notice, open_pane, resolve_mode, select, to_stdout
 from cortex.lookup import (
     SHORT_ID,
     command_table,
@@ -19,6 +19,7 @@ from cortex.lookup import (
     render,
     search,
     show,
+    show_alias,
 )
 from cortex.manage import Exclusions, add
 from cortex.model import CortexError, Example
@@ -164,7 +165,9 @@ def lookup(config, args: argparse.Namespace) -> int:
             highlight_stdout=False,
         )
     if args.command == "show":
-        examples = show(snapshot.examples, args.name, args.subcommand)
+        examples, note = show_alias(snapshot, args.name, args.subcommand)
+        if note:
+            notice(note)
         if not examples:
             target = f"{args.name} {args.subcommand or ''}".strip()
             raise CortexError(f"No examples for {target}; try `cortex search {args.name}`.")

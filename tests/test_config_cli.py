@@ -17,6 +17,13 @@ def test_starter_preserves_user_configuration(config):
     assert config.paths.config.read_text() == content
 
 
+def test_awesome_cheatsheets_is_opt_in_with_section_allowlists(config):
+    config.paths.config.write_text("[sources.awesome-cheatsheets]\nenabled = true\n")
+    source = next(item for item in load(config.paths).sources if item.id == "awesome-cheatsheets")
+    assert source.enabled and source.license == "MIT"
+    assert "FILE COMMANDS" in source.sections["languages/bash.sh"]
+
+
 @pytest.mark.parametrize(
     "content",
     [
@@ -26,6 +33,7 @@ def test_starter_preserves_user_configuration(config):
         "[general]\nonly_available = false\n",
         '[sources."../escape"]\nurl = "x"\nadapter = "cheat"\n',
         '[sources.cheat]\ninclude = ["../escape"]\n',
+        '[sources.awesome-cheatsheets]\nenabled = true\nsections = {"a.sh" = "TITLE"}\n',
     ],
 )
 def test_invalid_configuration_fails_before_fetch(config, content):

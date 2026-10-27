@@ -179,6 +179,23 @@ def assemble(
     )
 
 
+def merge_aliases(results: list[SourceResult]) -> dict[str, str]:
+    """Combine alias maps in priority order; the first source naming an alias wins."""
+    merged: dict[str, str] = {}
+    for result in results:
+        for name, target in result.aliases.items():
+            merged.setdefault(name, target)
+    resolved = {}
+    for name, target in merged.items():
+        seen = {name}
+        while target in merged and target not in seen:
+            seen.add(target)
+            target = merged[target]
+        if target not in seen:
+            resolved[name] = target
+    return dict(sorted(resolved.items()))
+
+
 def fenced(text: str) -> str:
     longest = max((len(match.group()) for match in re.finditer(r"`+", text)), default=0)
     fence = "`" * max(3, longest + 1)
@@ -203,6 +220,7 @@ def publish(
     results: list[SourceResult],
     progress: Callable[[SyncEvent], None] | None = None,
     excluded: list[Example] | None = None,
+    aliases: dict[str, str] | None = None,
 ) -> Path:
     root = config.paths.data / "snapshots"
     root.mkdir(parents=True, exist_ok=True)
@@ -231,6 +249,7 @@ def publish(
                     for example in examples
                 )
             )
+        (temporary / "aliases.json").write_text(json_text(aliases or {}))
         writing(1)
         (temporary / "commands.json").write_text(
             json_text(
@@ -400,10 +419,12 @@ def run(
         catalog, counts, diagnostics, inventories, excluded = assemble(config, inputs, progress)
         report["counts"] = counts
         report["commands"] = len({example.command for example in catalog})
+        aliases = merge_aliases(inputs)
+        report["aliases"] = len(aliases)
         atomic_text(config.paths.cache / "diagnostics.json", json_text(diagnostics))
         atomic_text(config.paths.cache / "source-inventory.json", json_text(inventories))
         report["published"] = True
-        destination = publish(config, catalog, report, inputs, progress, excluded)
+        destination = publish(config, catalog, report, inputs, progress, excluded, aliases)
         report["snapshot"] = str(destination)
         atomic_text(config.paths.cache / "last-sync.json", json_text(report))
         if progress:

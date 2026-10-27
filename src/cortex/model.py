@@ -8,7 +8,7 @@ from dataclasses import asdict, dataclass, field
 from typing import Any
 
 SCHEMA_VERSION = 1
-PARSER_VERSION = 2
+PARSER_VERSION = 3
 
 
 class CortexError(Exception):
@@ -71,6 +71,8 @@ class Diagnostic:
 class Parsed:
     examples: list[Example] = field(default_factory=list)
     diagnostics: list[Diagnostic] = field(default_factory=list)
+    # Alternate command name -> the command whose examples it shares.
+    aliases: dict[str, str] = field(default_factory=dict)
     files: int = 0
 
 

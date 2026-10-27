@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+import json
 import re
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from cortex.config import Source
 from cortex.model import Diagnostic, Example, Origin, Parsed
@@ -21,11 +22,14 @@ FENCE = re.compile(r"^\s*(`{3,}|~{3,})\s*([^`{]*?)\s*(?:\{.*\})?\s*$")
 ATTRIBUTES = re.compile(r"\s*\{[:.#][^}]*\}")
 HEADING = re.compile(r"^(#{1,6})\s+(.*?)\s*#*$")
 PROMPT = re.compile(r"^\s*\$ ")
-INLINE_COMMENT = re.compile(r"^([^'\"#`]*?\S)\s+#\s+(.+)$")
 COMMAND_COLUMNS = {"command", "commands", "example", "examples", "usage"}
 DESCRIPTION_COLUMNS = {"description", "operation", "meaning", "explanation", "action", "purpose"}
 # Paragraphs such as "or" between two blocks continue the previous description.
 CONNECTIVES = {"or", "and", "also", "alternatively", "ok"}
+LIST_MARKER = re.compile(r"^(?:[*+-]|\d+[.)])\s+")
+TLDR_ALIAS = re.compile(r"^> (?:Note: )?This command is an alias of (?:GNU )?`([^`]+)`")
+# Script banners: a rule of `#` (or `# ****`) above and below a section title.
+RULE = re.compile(r"^#{10,}\s*$|^#\s*\*{10,}\s*$")
 
 
 def platform_reason(path: str, text: str, tags: list[str]) -> str | None:
@@ -85,9 +89,19 @@ def make_example(
     parsed.examples.append(example)
 
 
+def add_alias(name: str, target: str, parsed: Parsed) -> None:
+    command = target.split()[0] if target.split() else ""
+    # Subcommand pages such as `docker-stop` alias part of their own command.
+    if command and name != command and not name.startswith(f"{command}-"):
+        parsed.aliases.setdefault(name, command)
+
+
 def tldr(text: str, source: Source, revision: str, path: str, parsed: Parsed) -> None:
     description = ""
     for number, line in enumerate(text.splitlines(), 1):
+        alias = TLDR_ALIAS.match(line)
+        if alias:
+            add_alias(PurePosixPath(path).name.removesuffix(".md"), alias.group(1), parsed)
         if line.startswith("- "):
             description = line[2:].rstrip(":")
         elif line.startswith("`") and line.endswith("`") and description:
@@ -178,6 +192,70 @@ def commented(text: str, source: Source, revision: str, path: str, parsed: Parse
     flush()
 
 
+def eg_aliases(text: str, source: Source, path: str, parsed: Parsed) -> None:
+    try:
+        aliases = json.loads(text)
+    except ValueError as exc:
+        parsed.diagnostics.append(Diagnostic(source.id, path, 0, f"invalid aliases: {exc}"))
+        return
+    if not isinstance(aliases, dict):
+        parsed.diagnostics.append(Diagnostic(source.id, path, 0, "invalid aliases: not an object"))
+        return
+    for name, target in sorted(aliases.items()):
+        if isinstance(target, str):
+            add_alias(name, target, parsed)
+
+
+def script(text: str, source: Source, revision: str, path: str, parsed: Parsed) -> None:
+    """Extract `command  # description` lines from a commented shell script.
+
+    A blank line or banner ends a group, so a comment above a command only
+    describes the commands that directly follow it. With a section allowlist
+    for this file, commands outside the listed banner titles are skipped.
+    """
+    keep = {title.casefold() for title in source.sections.get(path, [])}
+    group: list[str] = []
+    first = 0
+    title: list[str] | None = None
+    section = ""
+    reported: set[str] = set()
+
+    def flush() -> None:
+        nonlocal group
+        if group:
+            if not keep or section.casefold() in keep:
+                code_block(group, first, "", source, revision, path, parsed)
+            elif section not in reported and any(
+                line.strip() and not line.lstrip().startswith("#") for line in group
+            ):
+                # One diagnostic per skipped section, not per command.
+                reported.add(section)
+                reason = f"unselected section: {section or 'preamble'}"
+                parsed.diagnostics.append(Diagnostic(source.id, path, first, reason))
+            group = []
+
+    for number, line in enumerate(text.splitlines(), 1):
+        stripped = line.strip()
+        if RULE.match(stripped):
+            flush()
+            if title is None:
+                title = []
+            else:
+                # The first line names the section; later lines are notes such as URLs.
+                section, title = next((line for line in title if line), ""), None
+            continue
+        if title is not None:
+            title.append(stripped.lstrip("# "))
+            continue
+        if not stripped and not (group and group[-1].rstrip().endswith("\\")):
+            flush()
+            continue
+        if not group:
+            first = number
+        group.append(line)
+    flush()
+
+
 def inline(text: str) -> str:
     """Reduce Markdown inline markup in a description to readable text."""
     text = re.sub(r"!?\[([^\]]*)\]\([^)]*\)", r"\1", text)
@@ -192,6 +270,29 @@ def cell_text(cell: str) -> str:
     code = re.fullmatch(r"(`+)\s*(.*?)\s*\1", cell)
     # Outside code spans, table cells escape Markdown punctuation such as `\*`.
     return code.group(2) if code else re.sub(r"\\([\\`*_{}\[\]()#+.!-])", r"\1", cell)
+
+
+def trailing_comment(line: str) -> tuple[str, str] | None:
+    """Split `command  # comment` at the first unquoted ` # `."""
+    quote = ""
+    escaped = False
+    # An escaped space joins the word, so a `#` after it is not a comment.
+    separator = False
+    for index, char in enumerate(line):
+        if escaped:
+            escaped = separator = False
+            continue
+        if char == "\\" and quote != "'":
+            escaped = True
+        elif quote:
+            quote = "" if char == quote else quote
+        elif char in "'\"`":
+            quote = char
+        elif char == "#" and separator and line[index + 1 : index + 2].isspace():
+            command, comment = line[:index].rstrip(), line[index + 1 :].strip()
+            return (command, comment) if command and comment else None
+        separator = not quote and char.isspace()
+    return None
 
 
 def code_block(
@@ -239,21 +340,29 @@ def code_block(
             continue
         text = PROMPT.sub("", line, count=1)
         own = ""
-        trailing = INLINE_COMMENT.match(text.strip())
+        trailing = trailing_comment(text.strip())
         if trailing and not text.rstrip().endswith("\\"):
-            text, own = trailing.group(1), trailing.group(2)
+            text, own = trailing
         start = first + offset
         pending = [text]
     flush()
 
 
 def markdown_document(
-    text: str, source: Source, revision: str, path: str, parsed: Parsed, *, indented: bool
+    text: str,
+    source: Source,
+    revision: str,
+    path: str,
+    parsed: Parsed,
+    *,
+    indented: bool,
+    bare: bool = False,
 ) -> None:
     """Extract shell examples from fenced (and optionally indented) blocks and tables.
 
     The paragraph just above a block describes it, falling back to the nearest
     heading. A heading naming another platform suppresses its whole section.
+    With `bare`, fences without a language are shell too.
     """
     lines = text.splitlines()
     index = 0
@@ -273,7 +382,7 @@ def markdown_document(
         if forbidden:
             parsed.diagnostics.append(Diagnostic(source.id, path, first, "non-Linux section"))
             return
-        description = inline(" ".join(paragraph)) or heading
+        description = inline(LIST_MARKER.sub("", " ".join(paragraph), count=1)) or heading
         if description.strip(" .:,").lower() in CONNECTIVES:
             description = previous
         previous = description
@@ -323,7 +432,8 @@ def markdown_document(
                     break
                 body.append(lines[index])
                 index += 1
-            if fence.group(2).lower() in SHELL_FENCES:
+            language = fence.group(2).lower()
+            if language in SHELL_FENCES or (bare and not language):
                 emit(body, first)
             paragraph, blank = [], True
             index += 1
@@ -403,6 +513,12 @@ def parse(root: Path, source: Source, revision: str) -> Parsed:
         parsed.files += 1
         if source.adapter == "tldr":
             tldr(text, source, revision, relative, parsed)
+        elif source.adapter == "eg" and path.name == "aliases.json":
+            eg_aliases(text, source, relative, parsed)
+        elif source.adapter == "awesome-cheatsheets" and path.suffix == ".md":
+            markdown_document(text, source, revision, relative, parsed, indented=False, bare=True)
+        elif source.adapter == "awesome-cheatsheets":
+            script(text, source, revision, relative, parsed)
         elif source.adapter in {"eg", "cheatsheets-zip", "devhints"}:
             markdown_document(
                 text, source, revision, relative, parsed, indented=source.adapter == "eg"

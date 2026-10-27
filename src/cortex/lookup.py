@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from cortex.config import Config
@@ -20,6 +20,7 @@ class Snapshot:
     path: Path
     examples: list[Example]
     excluded: list[Example]
+    aliases: dict[str, str] = field(default_factory=dict)
 
 
 def read_examples(path: Path) -> list[Example]:
@@ -37,8 +38,17 @@ def load_snapshot(config: Config) -> Snapshot:
         raise CortexError("No catalog has been published yet; run `cortex sync` first.")
     # Resolve once so every file in this operation comes from the same snapshot.
     path = link.resolve()
+    aliases = path / "aliases.json"
+    try:
+        # Snapshots published before 0.6.0 have no alias map.
+        names = json.loads(aliases.read_text()) if aliases.exists() else {}
+    except (OSError, UnicodeError, ValueError) as exc:
+        raise CortexError(f"Cannot read {aliases}: {exc}") from exc
     return Snapshot(
-        path, read_examples(path / "catalog.jsonl"), read_examples(path / "excluded.jsonl")
+        path,
+        read_examples(path / "catalog.jsonl"),
+        read_examples(path / "excluded.jsonl"),
+        names if isinstance(names, dict) else {},
     )
 
 
@@ -77,6 +87,22 @@ def show(examples: list[Example], command: str, subcommand: str | None = None) -
         for example in examples
         if example.command == command and (not subcommand or example.subcommand == subcommand)
     ]
+
+
+def show_alias(
+    snapshot: Snapshot, command: str, subcommand: str | None = None
+) -> tuple[list[Example], str]:
+    """Examples for a command, falling back to the command it aliases; plus a note."""
+    examples = show(snapshot.examples, command, subcommand)
+    target = snapshot.aliases.get(command)
+    if not target:
+        return examples, ""
+    if examples:
+        return examples, f"{command} is an alias of {target}; see also `cortex show {target}`"
+    examples = show(snapshot.examples, target, subcommand)
+    if examples:
+        return examples, f"{command} is an alias of {target}; showing {target} examples"
+    return [], f"{command} is an alias of {target}, which has no examples either"
 
 
 def score(example: Example, terms: list[str]) -> int:

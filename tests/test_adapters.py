@@ -136,3 +136,91 @@ def test_flag_fragments_rejected_for_commented_sources(tmp_path):
     result = parse(tmp_path, Source("test", "test", "cheat", include=["*"]), "rev")
     assert [item.template for item in result.examples] == ["curl example.com"]
     assert [item.reason for item in result.diagnostics] == ["flag-only fragment"]
+
+
+def test_trailing_comments_respect_quotes():
+    from cortex.adapters import trailing_comment
+
+    assert trailing_comment("jq '.name' data.json  # Get one field") == (
+        "jq '.name' data.json",
+        "Get one field",
+    )
+    assert trailing_comment("echo 'a # b' \"c # d\"") is None
+    assert trailing_comment("echo a\\ # b") is None
+    assert trailing_comment("echo ${#array[@]} $#") is None
+    assert trailing_comment("git push origin #  ") is None
+
+
+def test_awesome_scripts_sections_and_comment_scope(tmp_path):
+    (tmp_path / "tools").mkdir()
+    rule = "#" * 30
+    (tmp_path / "tools/jq.sh").write_text(
+        f"#!/bin/bash\n{rule}\n# JQ\n# DOCUMENTATION: https://example.com\n{rule}\n\n"
+        "jq '.' data.json          # Pretty-print JSON\n"
+        "jq -r '.name' data.json\n\n"
+        "# write raw output\njq -r '.a' f.json\njq --raw-output '.a' f.json\n\n"
+        "jq -c '.[]' f.json \\\n  data.json  # not a description\n"
+    )
+    (tmp_path / "bash.sh").write_text(
+        f"{rule}\n# SHORTCUTS\n{rule}\n\nCTRL+A  # move to beginning of line\n\n"
+        "CTRL+E  # move to end of line\n\n"
+        f"{rule}\n# FILE COMMANDS\n{rule}\n\nls -a  # lists all files\n"
+        f"# {'*' * 20}\n# Settings\n# {'*' * 20}\n\nserver {{\n"
+    )
+    source = Source(
+        "awesome",
+        "test",
+        "awesome-cheatsheets",
+        include=["bash.sh", "tools/*.sh"],
+        sections={"bash.sh": ["file commands"]},
+    )
+    result = parse(tmp_path, source, "rev")
+    assert [(item.description, item.template) for item in result.examples] == [
+        ("lists all files", "ls -a"),
+        ("Pretty-print JSON", "jq '.' data.json"),
+        ("write raw output", "jq -r '.a' f.json"),
+        ("write raw output", "jq --raw-output '.a' f.json"),
+    ]
+    reasons = [(item.path, item.line, item.reason) for item in result.diagnostics]
+    assert reasons == [
+        ("bash.sh", 5, "unselected section: SHORTCUTS"),
+        ("bash.sh", 18, "unselected section: Settings"),
+        ("tools/jq.sh", 8, "missing description or command"),
+        ("tools/jq.sh", 14, "missing description or command"),
+    ]
+
+
+def test_awesome_markdown_accepts_bare_fences_and_bullets(tmp_path):
+    (tmp_path / "kubernetes.md").write_text(
+        "# Kubernetes\n\n* View config\n```\nkubectl config view\n```\n\n"
+        "1. Get pods\n```yaml\nkind: Pod\n```\n"
+    )
+    result = parse(tmp_path, Source("a", "test", "awesome-cheatsheets", include=["*.md"]), "rev")
+    assert [(item.description, item.template) for item in result.examples] == [
+        ("View config", "kubectl config view")
+    ]
+    # Other Markdown sources still ignore fences without a language.
+    result = parse(tmp_path, Source("z", "test", "cheatsheets-zip", include=["*.md"]), "rev")
+    assert not result.examples
+
+
+def test_alias_metadata_from_tldr_and_eg(tmp_path):
+    pages = tmp_path / "pages/common"
+    pages.mkdir(parents=True)
+    alias = "# {0}\n\n> This command is an alias of {1}`{2}`.\n\n- View docs:\n\n`tldr {2}`\n"
+    (pages / "egrep.md").write_text(alias.format("egrep", "", "grep --extended-regexp"))
+    (pages / "gls.md").write_text(alias.format("gls", "GNU ", "ls"))
+    (pages / "docker-stop.md").write_text(alias.format("docker stop", "", "docker container stop"))
+    (pages / "..md").write_text(alias.format(".", "", "source"))
+    result = parse(tmp_path, Source("tldr", "test", "tldr", include=["pages/*/*.md"]), "rev")
+    assert result.aliases == {"egrep": "grep", "gls": "ls", ".": "source"}
+
+    examples = tmp_path / "eg/examples"
+    examples.mkdir(parents=True)
+    (examples / "aliases.json").write_text('{"netcat": "nc", "bad": 3, "nc": "nc"}')
+    include = ["eg/examples/aliases.json"]
+    result = parse(tmp_path, Source("eg", "test", "eg", include=include), "rev")
+    assert result.aliases == {"netcat": "nc"}
+    (examples / "aliases.json").write_text("[1]")
+    result = parse(tmp_path, Source("eg", "test", "eg", include=include), "rev")
+    assert [item.reason for item in result.diagnostics] == ["invalid aliases: not an object"]

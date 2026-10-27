@@ -65,22 +65,23 @@ See `PLAN.md` section 7, Phase 2. Acceptance: enabling any implemented source jo
 - [ ] **Markdown parser noise.** (p3) [refactor] Diagrams and keybinding tables in shell fences reach the availability filter.
   E.g. cheatsheets.zip `awk.md` box-drawing lines and `tmux.md`/`screen.md` key tables become "unsupported"/"unavailable"
   diagnostics instead of extraction rejections. Harmless to output, but it inflates the counts `cortex sources` shows.
-- [ ] **awesome-cheatsheets adapter.** (p3) [feature] Opt-in adapter for selected `tools/` material and `languages/bash.sh` recipes.
-  Exclude language lessons, editor keystrokes, and macOS sections. Needs a registry entry.
+- [x] **awesome-cheatsheets adapter.** (p3) [feature] Opt-in; 13 `tools/` sheets plus four `languages/bash.sh` sections.
+  `command  # description` lines, per-file `sections` allowlists; real-corpus sync keeps 379 examples (295 unique).
 - [ ] **linux-command collection.** (p3) [feature] Opt-in, Chinese-language `jaywcjlove/linux-command` `command/*.md` source.
   Separate `language`; preserve per-file author attribution. Needs a registry entry and language filtering in merge.
 - [ ] **Bounded HTTP transport.** (p3) [feature] Configured-URL HTTP fetches with ETag/Last-Modified and rate limits.
-  Only for sources lacking original files; also enables an opt-in, disabled-by-default cht.sh single-command lookup.
+  Deferred (2026-10-27): every registered source has a Git repository, and cht.sh mostly serves cheat.sheets and
+  tldr, which are already imported. Build it when a useful source exists only as a website.
 
-## Phase 3 — local lookup and personal management (complete except aliases)
+## Phase 3 — local lookup and personal management (complete)
 
 Acceptance: lookup works offline; additions and remembered removals survive upstream updates and cache recreation.
 
 - [x] **list/show/search commands.** (p2) [feature] `cortex list`, `show <command> [sub]`, `search <terms>`; offline, `--json`.
 - [x] **add/remove/restore commands.** (p2) [feature] Append to `custom/`, rewrite `exclusions.toml` arrays, offline rebuild.
 - [x] **Origin and license inspection.** (p3) [feature] `show`/`search --origins` and `--json`.
-- [ ] **eg aliases in lookup.** (p3) [feature] Save eg's `aliases.json` into the snapshot so `show egrep` finds `grep`.
-  The eg adapter ignores it today (e.g. `egrep` -> `grep`, `clang` -> `gcc`). Needs an adapter output and a snapshot file.
+- [x] **eg aliases in lookup.** (p3) [feature] Snapshot `aliases.json` from eg's map and tldr "alias of" notes (326).
+  `show netcat` falls back to `nc` with a note; commands with their own examples keep them and name the target.
 - [x] **`.` builtin loses its command name.** (p2) [bug] `.` now counts as an opaque launcher, like `source`.
 
 ## Phase 4 — terminal presentation and zsh integration (not started)

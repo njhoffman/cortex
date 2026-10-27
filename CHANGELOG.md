@@ -2,6 +2,21 @@
 
 All approved updates are versioned with SemVer and annotated GitHub tags. New features increment the minor version; compatible fixes and maintenance increment the patch version. Interfaces remain under development before 1.0.0.
 
+## [0.6.0] - 2026-10-27
+
+### Added
+
+- Opt-in `awesome-cheatsheets` source (MIT): 13 tool sheets (git, docker, jq, curl, ffmpeg, kubernetes, and others) plus the file, directory, network, and process sections of `languages/bash.sh`. Enable it with `[sources.awesome-cheatsheets] enabled = true`.
+- Source `sections` tables limit a file to the listed banner titles, such as `"languages/bash.sh" = ["FILE COMMANDS"]`.
+- `cortex show` follows command aliases from eg's `aliases.json` and tldr's "alias of" notes. `cortex show netcat` prints `nc` examples with a note on stderr. A command with its own examples, such as `egrep`, keeps them and the note names the alias target.
+- Snapshots include `aliases.json`, and the sync report counts aliases.
+
+### Changed
+
+- In Markdown sources, trailing `# comments` are now recognized after quoted arguments, as in `jq '.name' f  # Get one field`. List markers (`*`, `-`, `1.`) are stripped from descriptions.
+- The parser version is now 3, so the next sync reparses every cached source once.
+- The sync progress list widens its name column for long source IDs.
+
 ## [0.5.0] - 2026-10-27
 
 ### Added
@@ -110,3 +125,5 @@ All approved updates are versioned with SemVer and annotated GitHub tags. New fe
 [0.4.1]: https://github.com/njhoffman/cortex/releases/tag/v0.4.1
 
 [0.5.0]: https://github.com/njhoffman/cortex/releases/tag/v0.5.0
+
+[0.6.0]: https://github.com/njhoffman/cortex/releases/tag/v0.6.0

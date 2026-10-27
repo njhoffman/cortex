@@ -60,12 +60,13 @@ license = "personal"
 
 Use `cortex --config /path/to/config.toml sync` for another config. Enabling an adapter that does not exist reports a configuration error.
 
-Two more sources ship disabled and can be enabled with `enabled = true`:
+Three more sources ship disabled and can be enabled with `enabled = true`:
 
 - `cheatsheets-zip`: an allowlist of command pages from [cheatsheets.zip](https://cheatsheets.zip/) (GPL-3.0).
 - `devhints`: command-line pages from [devhints.io](https://devhints.io/). Upstream declares no content license, so sync prints a warning while it is enabled; keep its examples to personal use.
+- `awesome-cheatsheets`: selected tool sheets and command sections of `languages/bash.sh` from [LeCoupa/awesome-cheatsheets](https://github.com/LeCoupa/awesome-cheatsheets) (MIT). Each line is `command  # description`. A `sections` table limits a file to the listed banner titles; editor keystrokes and syntax lessons are skipped.
 
-For these Markdown sources Cortex reads shell code blocks and command/description tables. It skips flag-only lines, command output after `$ ` prompts, and sections headed for other platforms.
+For the Markdown sources Cortex reads shell code blocks and command/description tables. It skips flag-only lines, command output after `$ ` prompts, and sections headed for other platforms.
 
 `cortex sources` lists every configured source with its license, last sync status, revision, check time, and parsed, rejected, and kept example counts. `cortex sources <id>` adds rejection reasons, a sample location for each, and the most common missing commands. It reads only local files; `--json` prints the same data.
 
@@ -89,7 +90,7 @@ cortex show git commit --origins         # one subcommand, plus sources and lice
 cortex search extract archive            # every term must match; command names rank first
 ```
 
-`show` and `search` accept `--json`. Templates are printed without styling so they can be copied. `search` returns up to 50 examples (`--limit N`) and exits `1` when nothing matches.
+`show` follows command aliases from eg's `aliases.json` and tldr's "alias of" notes. `cortex show netcat` prints `nc` examples with a note on stderr; a command with its own examples, such as `egrep`, keeps them and names the alias target. `show` and `search` accept `--json`. Templates are printed without styling so they can be copied. `search` returns up to 50 examples (`--limit N`) and exits `1` when nothing matches.
 
 ### Display modes
 
